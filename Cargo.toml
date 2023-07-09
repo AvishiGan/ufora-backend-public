@@ -8,6 +8,8 @@ edition = "2021"
 [dependencies]
 axum = { version = "0.6.18", features = ["headers"] }
 cargo-watch = "8.4.0"
+dotenvy = "0.15.7"
+dotenvy_macro = "0.15.7"
 serde = { version = "1.0.169", features = ["derive"] }
 serde_json = "1.0.100"
 surrealdb = "1.0.0-beta.9"
