@@ -1196,3 +1196,23 @@ Block cache LRUCache@0x13060d838#63722 capacity: 8.00 MB usage: 0.08 KB table_si
 Block cache entry stats(count,size,portion): Misc(1,0.00 KB,0%)
 
 ** File Read Latency Histogram By Level [default] **
+2023/07/11-08:44:10.106729 6152744960 [db/db_impl/db_impl.cc:1110] ------- DUMPING STATS -------
+2023/07/11-08:44:10.107899 6152744960 [db/db_impl/db_impl.cc:1111] 
+** DB Stats **
+Uptime(secs): 69453.2 total, 600.0 interval
+Cumulative writes: 0 writes, 0 keys, 0 commit groups, 0.0 writes per commit group, ingest: 0.00 GB, 0.00 MB/s
+Cumulative WAL: 0 writes, 0 syncs, 0.00 writes per sync, written: 0.00 GB, 0.00 MB/s
+Cumulative stall: 00:00:0.000 H:M:S, 0.0 percent
+Interval writes: 0 writes, 0 keys, 0 commit groups, 0.0 writes per commit group, ingest: 0.00 MB, 0.00 MB/s
+Interval WAL: 0 writes, 0 syncs, 0.00 writes per sync, written: 0.00 GB, 0.00 MB/s
+Interval stall: 00:00:0.000 H:M:S, 0.0 percent
+2023/07/11-08:54:10.108656 6152744960 [db/db_impl/db_impl.cc:1110] ------- DUMPING STATS -------
+2023/07/11-08:54:10.109086 6152744960 [db/db_impl/db_impl.cc:1111] 
+** DB Stats **
+Uptime(secs): 70053.2 total, 600.0 interval
+Cumulative writes: 0 writes, 0 keys, 0 commit groups, 0.0 writes per commit group, ingest: 0.00 GB, 0.00 MB/s
+Cumulative WAL: 0 writes, 0 syncs, 0.00 writes per sync, written: 0.00 GB, 0.00 MB/s
+Cumulative stall: 00:00:0.000 H:M:S, 0.0 percent
+Interval writes: 0 writes, 0 keys, 0 commit groups, 0.0 writes per commit group, ingest: 0.00 MB, 0.00 MB/s
+Interval WAL: 0 writes, 0 syncs, 0.00 writes per sync, written: 0.00 GB, 0.00 MB/s
+Interval stall: 00:00:0.000 H:M:S, 0.0 percent

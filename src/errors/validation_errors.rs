@@ -1,4 +1,4 @@
-
+#![allow(dead_code)]
 use axum::response::{IntoResponse,Response};
 
 pub enum ValidationError {
