@@ -1,5 +1,5 @@
 
-use axum::response::IntoResponse;
+use axum::response::{IntoResponse,Response};
 
 pub enum ValidationError {
     InvalidEmail,
@@ -12,7 +12,7 @@ pub enum ValidationError {
 
 impl IntoResponse for ValidationError {
 
-    fn into_response(&self) -> impl IntoResponse {
+    fn into_response(self) -> Response {
 
         match self {
             ValidationError::InvalidEmail => {
