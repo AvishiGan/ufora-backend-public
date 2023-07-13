@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use axum::{
     Router, 
-    routing::{post, get}
+    routing::{post}
 };
 use surrealdb::{Surreal, engine::remote::ws::Client};
 
