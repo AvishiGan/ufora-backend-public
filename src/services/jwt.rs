@@ -31,3 +31,7 @@ pub async fn get_jwt() -> Result<String,StatusCode> {
     ).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?)
 
 }
+
+pub async fn verify_jwt() {
+    todo!()
+}
