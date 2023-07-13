@@ -5,7 +5,7 @@ use crate::handlers::login_handler;
 
 use axum::{
     Router, 
-    routing::{post}
+    routing::{post, get}
 };
 use surrealdb::{Surreal, engine::remote::ws::Client};
 

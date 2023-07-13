@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use axum::{extract::State, TypedHeader, Json, response::{IntoResponse, Response}, http::header};
+use axum::{extract::State, Json, response::{IntoResponse, Response}, http::header};
 use axum_extra::extract::cookie::Cookie;
 use serde_json::json;
 use surrealdb::{Surreal, engine::remote::ws::Client};
