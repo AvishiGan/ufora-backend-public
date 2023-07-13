@@ -7,7 +7,9 @@ edition = "2021"
 
 [dependencies]
 axum = { version = "0.6.18", features = ["headers"] }
+axum-extra = { version = "0.7.4", features = ["cookie"] }
 cargo-watch = "8.4.0"
+chrono = { version = "0.4.26", features = ["serde"] }
 dotenvy = "0.15.7"
 dotenvy_macro = "0.15.7"
 jsonwebtoken = "8.3.0"

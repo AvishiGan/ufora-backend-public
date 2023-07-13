@@ -5,6 +5,8 @@ mod routes;
 mod database;
 mod middlewares;
 mod errors;
+mod handlers;
+mod services;
 
 #[tokio::main]
 async fn main() {
