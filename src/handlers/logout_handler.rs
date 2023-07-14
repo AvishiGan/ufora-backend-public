@@ -8,7 +8,7 @@ pub async fn logout(
 ) -> Result<(),StatusCode> {
     let token = cookiejar.get("_secure-jwt").unwrap().value().to_string();
 
-    let token = jwt::verify_jwt(token).await ?;
+    let token = jwt::verify_jwt(token).await.unwrap() ;
 
     println!("token: {:?}", token);
 
