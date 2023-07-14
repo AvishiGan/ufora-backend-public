@@ -1,17 +1,20 @@
-use axum::http::StatusCode;
-use tower_cookies::{Cookies};
+use axum::{http::{StatusCode, Response, header}, response::IntoResponse};
+use serde_json::json;
+use tower_cookies::{Cookie, cookie::time};
 
+pub async fn logout() -> Result<impl IntoResponse,StatusCode> {
 
-use crate::services::jwt;
+    let cookie = Cookie::build("_Secure-jwt", "")
+        .max_age(time::Duration::days(-1))
+        .finish();
 
-pub async fn logout(
-    cookie: Cookies
-) -> Result<(),StatusCode> {
-    let token = cookie.get("_secure-jwt").unwrap().value().to_string();
+        let mut response = Response::new(json!({
+            "message": "Logout successful",
+        }).to_string());
+    
+        response
+            .headers_mut()
+            .insert(header::SET_COOKIE, cookie.to_string().parse().unwrap());
 
-    let token = jwt::verify_jwt(token).await.unwrap() ;
-
-    println!("token: {:?}", token);
-
-    Ok(())
+    Ok(response)
 }

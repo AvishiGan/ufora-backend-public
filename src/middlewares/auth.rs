@@ -13,12 +13,10 @@ pub async fn validate_jwt<T>(
 
     println!("cookiejar: {:?}", cookiejar);
 
-    if let Some(cookie) = cookiejar.get("_secure-jwt") {
+    if let Some(cookie) = cookiejar.get("_Secure-jwt") {
         let token = cookie.value().to_string();
 
         let token = jwt::verify_jwt(token).await ?;
-
-        println!("token: {:?}", token);
 
         Ok(next.run(request).await)
     } else {

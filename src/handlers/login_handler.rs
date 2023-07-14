@@ -20,7 +20,7 @@ pub async fn login_via_platform(
 ) -> impl IntoResponse {
     let token = jwt::get_jwt().await.unwrap();
 
-    let cookie = Cookie::build("_secure-jwt", token)
+    let cookie = Cookie::build("_Secure-jwt", token)
         .domain("localhost")
         .path("/")
         .secure(true)
