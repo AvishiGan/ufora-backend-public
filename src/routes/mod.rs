@@ -1,5 +1,6 @@
 mod login_router;
 mod logout_router;
+mod registration_router;
 mod test_route;
 
 use std::sync::Arc;
@@ -14,6 +15,7 @@ use crate::middlewares;
 
 use login_router::get_login_router;
 use logout_router::get_logout_router;
+use registration_router::get_registration_router;
 use surrealdb::{Surreal, engine::remote::ws::Client};
 
 
@@ -24,6 +26,7 @@ pub fn get_router() -> Router<Arc<Surreal<Client>>> {
     .merge(test_route::get_test_router())
     .layer(middleware::from_fn(middlewares::auth::validate_jwt))
     .merge(get_login_router())
+    .merge(get_registration_router())
     .layer(CookieManagerLayer::new())
 
 }
