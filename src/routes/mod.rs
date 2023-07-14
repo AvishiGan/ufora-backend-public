@@ -8,6 +8,7 @@ use axum::{
     Router, 
     middleware
 };
+use tower_cookies::CookieManagerLayer;
 
 use crate::middlewares;
 
@@ -23,4 +24,5 @@ pub fn get_router() -> Router<Arc<Surreal<Client>>> {
     .layer(middleware::from_fn(middlewares::auth::validate_jwt))
     .merge(get_login_router())
     .merge(get_logout_router())
+    .layer(CookieManagerLayer::new())
 }

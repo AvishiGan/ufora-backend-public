@@ -1,14 +1,15 @@
 use axum::{http::{Request, StatusCode}, middleware::Next, response::Response,};
-use axum_extra::extract::CookieJar;
+use tower_cookies::Cookies;
 
 use crate::services::jwt;
 
 pub async fn validate_jwt<T>(
+    cookie: Cookies,
     request: Request<T>,
     next: Next<T>
 ) -> Result<Response, StatusCode> {
 
-    let cookiejar = CookieJar::from_headers(request.headers());
+    let cookiejar = cookie;
 
     println!("cookiejar: {:?}", cookiejar);
 

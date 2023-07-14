@@ -2,7 +2,7 @@ use axum::{
     http::StatusCode, 
     response::IntoResponse
 };
-use axum_extra::extract::cookie::Cookie;
+
 use jsonwebtoken::{
     encode,
     decode,

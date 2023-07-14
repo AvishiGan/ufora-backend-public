@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
 use axum::{extract::State, Json, response::{IntoResponse, Response}, http::header};
-use axum_extra::extract::cookie::Cookie;
 use serde_json::json;
 use surrealdb::{Surreal, engine::remote::ws::Client};
+use tower_cookies::Cookie;
 
 use crate::services::jwt;
 
@@ -20,7 +20,8 @@ pub async fn login_via_platform(
 ) -> impl IntoResponse {
     let token = jwt::get_jwt().await.unwrap();
 
-    let cookie = Cookie::build("_Secure-jwt", token)
+    let cookie = Cookie::build("_secure-jwt", token)
+        .domain("localhost")
         .path("/")
         .secure(true)
         .http_only(true)
