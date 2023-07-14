@@ -20,7 +20,8 @@ pub fn get_router() -> Router<Arc<Surreal<Client>>> {
     
     Router::new()
     .merge(test_route::get_test_router())
+    .merge(get_logout_router())
     .layer(middleware::from_fn(middlewares::auth::validate_jwt))
     .merge(get_login_router())
-    .merge(get_logout_router())
+    
 }

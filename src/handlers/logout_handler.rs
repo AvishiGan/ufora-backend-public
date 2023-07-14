@@ -1,16 +1,15 @@
+
 use axum::http::StatusCode;
-use axum_extra::extract::CookieJar;
+use axum_extra::extract::cookie::Cookie;
+use chrono::DateTime;
 
-use crate::services::jwt;
 
-pub async fn logout(
-    cookiejar: CookieJar
-) -> Result<(),StatusCode> {
-    let token = cookiejar.get("_secure-jwt").unwrap().value().to_string();
 
-    let token = jwt::verify_jwt(token).await.unwrap() ;
-
-    println!("token: {:?}", token);
+pub async fn logout() -> Result<(),StatusCode> {
+    
+    let cookie = Cookie::build("_Secure-jwt", "")
+        .expires(time::OffsetDateTime::now_utc() - time::Duration::days(1))
+        .finish();
 
     Ok(())
 }
