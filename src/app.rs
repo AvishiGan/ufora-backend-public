@@ -3,12 +3,11 @@ use crate::routes;
 use crate::database;
 
 use axum::Router;
-use dotenvy::dotenv;
 use dotenvy_macro::dotenv;
 
 pub async fn run() -> Result<(), String> {
 
-    dotenv().ok();
+    
 
     let databsase_credentials = (
         dotenv!("DB_URI"),
