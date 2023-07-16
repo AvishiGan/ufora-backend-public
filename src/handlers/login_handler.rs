@@ -18,6 +18,11 @@ pub async fn login_via_platform(
     State(db): State<Arc<Surreal<Client>>>,
     Json(login_request): Json<LoginRequest>,
 ) -> impl IntoResponse {
+
+    let user:Vec<LoginRequest> = db.select("user").await.unwrap();
+
+    println!("{:?}",user);
+
     let token = jwt::get_jwt().await.unwrap();
 
     let cookie = Cookie::build("_Secure-jwt", token)
