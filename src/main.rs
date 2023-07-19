@@ -7,6 +7,7 @@ mod middlewares;
 mod errors;
 mod handlers;
 mod services;
+mod models;
 
 #[tokio::main]
 async fn main() {
