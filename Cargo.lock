@@ -2902,6 +2902,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "simple-collection-macros"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b05a8168b41b5da2f7c4acafab98696ff3c35e4b88c0d7a9b750a4bf82833d0b"
+
+[[package]]
 name = "simple_asn1"
 version = "0.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3533,6 +3539,7 @@ dependencies = [
  "lettre",
  "serde",
  "serde_json",
+ "simple-collection-macros",
  "surrealdb",
  "tokio",
  "tower-cookies",
