@@ -1,3 +1,5 @@
 /target
 .vscode
 .env
+/db
+/surreal_test
