@@ -1,3 +1,3 @@
-pub mod login_handler;
-pub mod logout_handler;
-pub mod registration_handler;
+pub mod login_handlers;
+pub mod logout_handlers;
+pub mod registration_handlers;

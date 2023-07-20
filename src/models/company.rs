@@ -4,7 +4,7 @@ use simple_collection_macros::bmap;
 use axum::http::StatusCode;
 use surrealdb::{sql::{
     Thing, 
-    statements::CreateStatement,
+    statements::{CreateStatement, InsertStatement},
     Output,
     Fields,
     Field,
@@ -13,7 +13,8 @@ use surrealdb::{sql::{
     Object,
     Strand,
     Table,
-    Data
+    Data,
+    Idiom, Part, Ident
 }, Surreal, engine::remote::ws::Client};
 
 
@@ -27,7 +28,17 @@ pub struct Company {
 
 impl Company {
 
-    pub async fn register_a_company(self,db: Arc<Surreal<Client>>) -> Result<(Thing),StatusCode> {
+    pub fn from(name: Option<String>, email: Option<String> ) -> Self {
+        Self {
+            id:None,
+            name,
+            email
+        }
+    }
+
+    pub async fn get_register_query(
+        self,
+    ) -> Result<CreateStatement,StatusCode> {
 
 
         match (self.email.clone(),self.name.clone()) {
@@ -35,7 +46,24 @@ impl Company {
             (_,_) => {}
         }
 
-        let create_statement = CreateStatement {
+        // Ok(InsertStatement {
+        //     into: Table("company".to_string()),
+        //     data: Data::ContentExpression(Value::Object( Object (bmap! {
+        //         "name".to_string() => Value::Strand(Strand(self.name.unwrap())),
+        //         "email".to_string() => Value::Strand(Strand(self.email.unwrap())),
+        //     }))),
+        //     ignore: false,
+        //     update: None,
+        //     output: Some(
+        //         Output::Fields(
+        //             Fields(vec![
+        //                 Field::Alone(Value::Idiom(Idiom(vec![Part::Field(Ident("id".to_string()))])))
+        //                 ],true))
+        //     ),timeout: None,
+        //     parallel:false
+        // })
+
+        Ok(CreateStatement {
             what: Values(
                 vec![Value::Table(Table("company".to_string()))]
             ),
@@ -46,27 +74,12 @@ impl Company {
             output: Some(
                 Output::Fields(
                     Fields(vec![
-                        Field::Alone(Value::Strand(Strand("id".to_string())))
+                        Field::Alone(Value::Idiom(Idiom(vec![Part::Field(Ident("id".to_string()))])))
                         ],true))
             ),
             timeout: None,
             parallel: false,
-        }; 
-
-        let result = db.query(create_statement.to_string()).await;
-        
-        match result {
-
-            Ok(mut result) => {
-                let new_id: Option<String> = result.take(0).unwrap();
-            
-                match new_id {
-                    Some(id) => Ok(Thing::from(("company",id.as_ref()))),
-                    None => Err(StatusCode::INTERNAL_SERVER_ERROR)
-                }
-            },
-            Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR)
-        } 
+        })
 
     }
 }
