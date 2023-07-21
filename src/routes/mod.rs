@@ -2,6 +2,7 @@ mod login_router;
 mod logout_router;
 mod registration_router;
 mod test_route;
+mod verification_router;
 
 use std::sync::Arc;
 
@@ -27,6 +28,7 @@ pub fn get_router() -> Router<Arc<Surreal<Client>>> {
     .layer(middleware::from_fn(middlewares::auth::validate_jwt))
     .merge(get_login_router())
     .merge(get_registration_router())
+    .merge(verification_router::get_verification_router())
     .layer(CookieManagerLayer::new())
 
 }
