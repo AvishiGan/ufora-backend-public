@@ -14,7 +14,7 @@ pub fn get_test_router() -> Router<Arc<Surreal<Client>>> {
 }
 
 #[derive(serde::Deserialize,serde::Serialize)]
-pub struct CompanyDetails {
+pub struct UndergraduateDetails {
     name:Option<String>,
     username:Option<String>,
     email:Option<String>,
@@ -23,7 +23,7 @@ pub struct CompanyDetails {
 
 async fn test_handler(
     State(db): State<Arc<Surreal<Client>>>,
-    Json(company_details): Json<CompanyDetails>,
+    Json(company_details): Json<UndergraduateDetails>,
 ) -> Result<String,StatusCode> {
 
     Ok("set ne".to_string())

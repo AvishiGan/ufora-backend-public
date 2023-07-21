@@ -46,24 +46,29 @@ fn hash_password(password: String) -> Result<String,StatusCode> {
     bcrypt::hash(password, 14).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
 }
 
-#[derive(serde::Deserialize,serde::Serialize)]
-pub struct CompanyDetails {
+#[derive(serde::Deserialize)]
+pub struct CompanyRequestDetails {
     name:Option<String>,
     username:Option<String>,
     email:Option<String>,
     password:Option<String>,
 }
 
-impl CompanyDetails {
+impl CompanyRequestDetails {
     pub fn get_company_and_user_models(self) -> (Company,User) {
         (Company::from(self.name,self.email),User::from(self.username,self.password))
     }
 }
 
+#[derive(serde::Serialize)]
+pub struct CompanyRegistrationResponse {
+    message:String
+}
+
 pub async fn register_a_company(
     State(db): State<Arc<Surreal<Client>>>,
-    Json(company_details): Json<CompanyDetails>,
-) -> Result<String,StatusCode> {
+    Json(company_details): Json<CompanyRequestDetails>,
+) -> Result<Json<CompanyRegistrationResponse>,StatusCode> {
 
     let (company,user) = company_details.get_company_and_user_models();
 
@@ -76,7 +81,7 @@ pub async fn register_a_company(
             let response = db.query(user.get_create_user_query("company".to_string(),company_id.unwrap()).await.unwrap()).await;
             
             match response {
-                Ok(_) => Ok("Company created successfuly".to_string()),
+                Ok(_) => Ok(Json(CompanyRegistrationResponse { message: "Company account has been created successfully".to_string() })),
                 Err(e) => {println!("{:?}",e);return Err(StatusCode::INTERNAL_SERVER_ERROR)}
             }
 
