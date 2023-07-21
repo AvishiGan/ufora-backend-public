@@ -1,8 +1,7 @@
-use std::sync::Arc;
 
 use axum::http::StatusCode;
 use simple_collection_macros::bmap;
-use surrealdb::{sql::{Thing, statements::{CreateStatement, SelectStatement}, Values, Value, Table, Data, Object, Strand, Output, Param, Ident, Subquery, Fields, Field, Idiom, Part, Limit}, Surreal, engine::remote::ws::Client};
+use surrealdb::sql::{Thing, statements::CreateStatement, Values, Value, Table, Data, Object, Strand, Output};
 
 use crate::services::password;
 
