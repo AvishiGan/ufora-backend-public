@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use axum::response::IntoResponse;
 use surrealdb::{
     Surreal, engine::remote::ws::{Client, Ws},
     opt::auth::Root
@@ -18,7 +19,7 @@ pub async fn connect(
 
     let db = Surreal::new::<Ws>(db_uri)
     .await
-    .map_err(|e| e.to_string())?;
+    .map_err(|e| {println!("{:?}",e);e.to_string()})?;
 
     db.signin( Root {
         username,
