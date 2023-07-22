@@ -33,7 +33,7 @@ impl User {
     ) -> Result<CreateStatement,StatusCode> {
 
         match (self.username.clone(),self.password.clone(),user_id.clone()) {
-            (None,_,_) | (_, None,_) | (_,_,None) => Err(StatusCode::INTERNAL_SERVER_ERROR) ?,
+            (None,_,_) | (_, None,_) | (_,_,None) => Err(StatusCode::BAD_REQUEST) ?,
             (_,_,_) => {}
         }
 

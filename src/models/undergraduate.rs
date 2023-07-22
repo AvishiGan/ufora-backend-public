@@ -25,7 +25,7 @@ impl Undergraduate {
      ) -> Result<CreateStatement,StatusCode> {
 
         match (self.name.clone(),self.email.clone()) {
-            (None,_) | (_, None) => Err(StatusCode::INTERNAL_SERVER_ERROR) ?,
+            (None,_) | (_, None) => Err(StatusCode::BAD_REQUEST) ?,
             (_,_) => {}
         }
 

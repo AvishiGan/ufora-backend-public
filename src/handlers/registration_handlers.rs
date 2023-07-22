@@ -35,7 +35,7 @@ pub async fn register_an_undergraduate(
 
     let (undergraduate,user) = company_details.get_undergraduate_and_user_models();
 
-    let response = db.query(undergraduate.get_register_query().await.unwrap()).await;
+    let response = db.query(undergraduate.get_register_query().await?).await;
 
     match response {
         Ok(mut response) => {
@@ -83,7 +83,7 @@ pub async fn register_a_company(
 
     let (company,user) = company_details.get_company_and_user_models();
 
-    let response = db.query(company.get_register_query().await.unwrap()).await;
+    let response = db.query(company.get_register_query().await?).await;
 
     match response {
         Ok(mut response) => {
