@@ -1,7 +1,7 @@
 
 use axum::http::StatusCode;
 use simple_collection_macros::bmap;
-use surrealdb::sql::{Thing, statements::CreateStatement, Values, Value, Table, Data, Object, Strand, Output};
+use surrealdb::sql::{Thing, statements::CreateStatement, Values, Value, Table, Data, Object, Strand, Output, Number};
 
 use crate::services::password;
 
@@ -12,7 +12,8 @@ pub struct User {
     password: Option<String>,
     locked_flag: Option<bool>,
     user_type: Option<String>,
-    user_id: Option<Thing>
+    user_id: Option<Thing>,
+    invalid_login_attempts: Option<i32>,
 }
 
 impl User {
@@ -47,6 +48,7 @@ impl User {
                 "locked_flag".to_string() => Value::False,
                 "user_type".to_string() => Value::Strand(Strand(user_type)),
                 "user_id".to_string() => Value::Thing(Thing::from(user_id.unwrap())),
+                "invalid_login_attempts".to_string() => Value::Number(Number::Int(0))
             ))))),
             output: Some(Output::Null),
             timeout: None,
