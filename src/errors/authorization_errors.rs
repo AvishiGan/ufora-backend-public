@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 use axum::response::{IntoResponse,Response};
 
+#[derive(serde::Serialize)]
 pub enum AuthorizationError {
     AccessDeniedError { msg: String },
     InsufficientPermissionsError { msg: String },

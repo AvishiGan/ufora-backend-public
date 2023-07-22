@@ -1,7 +1,9 @@
 
+use std::{sync::Arc, vec};
+
 use axum::http::StatusCode;
 use simple_collection_macros::bmap;
-use surrealdb::sql::{Thing, statements::CreateStatement, Values, Value, Table, Data, Object, Strand, Output, Number};
+use surrealdb::{sql::{Thing, statements::{CreateStatement, SelectStatement}, Values, Value, Table, Data, Object, Strand, Output, Number, Fields, Limit, Cond, Expression, Part, Ident, Idiom, Field}, Surreal, engine::remote::ws::Client, opt::PatchOp};
 
 use crate::services::password;
 
@@ -13,11 +15,12 @@ pub struct User {
     locked_flag: Option<bool>,
     user_type: Option<String>,
     user_id: Option<Thing>,
-    invalid_login_attempts: Option<i32>,
+    pub invalid_login_attempts: Option<i32>,
 }
 
 impl User {
 
+    // returns a new user model
     pub fn from(username: Option<String>, password: Option<String>) -> Self {
         Self {
             id: None,
@@ -27,6 +30,7 @@ impl User {
         }
     }
 
+    // returns the surrealQl query for creating a user
     pub async fn get_create_user_query(
         self,
         user_type: String,
@@ -57,4 +61,80 @@ impl User {
 
     }
     
+    pub async fn retrieve_user_from_database(
+        db:Arc<Surreal<Client>>,username: String
+    ) -> Result<Self,StatusCode> {
+
+        let mut response = db.query(SelectStatement {
+            expr: Fields (
+                vec![Field::All],
+                true
+            ),
+            what: Values(
+                vec![Value::Table(Table("user".to_string()))]
+            ),
+            cond:Some(Cond(
+                Value::Expression(Box::from(Expression {
+                    l: Value::Idiom(Idiom(vec![Part::Field(Ident("username".to_string()))])),
+                    o: surrealdb::sql::Operator::Equal,
+                    r: Value::Strand(Strand(username))
+                })))
+            ),
+            group: None,
+            order: None,
+            limit: Some(Limit(Value::Number(Number::Int(1)))),
+            start: None,
+            fetch: None,
+            version: None,
+            split:None,
+            timeout:None,
+            parallel:false
+
+        }).await.unwrap();
+
+        let users: Option<Self> = response.take(0).unwrap();
+
+        match users {
+            Some(user) => Ok(user),
+            None => Err(StatusCode::NOT_FOUND)
+        }
+
+    }
+
+    pub fn get_password(&self) -> Option<String> {
+        self.password.clone()
+    }
+
+    pub async fn update_login_attempts(
+        self,
+        db:Arc<Surreal<Client>>,
+        new_invalid_login_attempts: i32
+    ) -> () {
+
+        #[derive(serde::Deserialize)]
+        struct LoginAttemptUpdateResult {}
+
+        let response: Option<LoginAttemptUpdateResult> = match new_invalid_login_attempts  {
+            0..=4 => {
+                db.update(("user",self.id.unwrap().id))
+                    .patch(PatchOp::replace("/invalid_login_attempts",new_invalid_login_attempts))
+                    .await.unwrap()
+            },
+            5 => {
+                db.update(("user",self.id.unwrap().id))
+                    .patch(PatchOp::replace("/invalid_login_attempts",new_invalid_login_attempts))
+                    .patch(PatchOp::replace("/locked_flag",true))
+                    .await.unwrap()
+            }
+            _ => {
+                None
+            }
+        };
+        
+    }
+
+    pub fn is_user_locked(&self) -> bool {
+        self.locked_flag.unwrap()
+    }
+
 }
