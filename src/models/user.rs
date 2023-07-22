@@ -7,6 +7,7 @@ use surrealdb::{sql::{Thing, statements::{CreateStatement, SelectStatement}, Val
 
 use crate::services::password;
 
+// model for user
 #[derive(serde::Serialize,serde::Deserialize,Default)]
 pub struct User {
     id: Option<Thing>,
@@ -61,6 +62,7 @@ impl User {
 
     }
     
+    // returns the user from the database
     pub async fn retrieve_user_from_database(
         db:Arc<Surreal<Client>>,username: String
     ) -> Result<Self,StatusCode> {
@@ -101,10 +103,12 @@ impl User {
 
     }
 
+    // gets the stored password
     pub fn get_password(&self) -> Option<String> {
         self.password.clone()
     }
 
+    // updates the invalid login attempts and locked account
     pub async fn update_login_attempts(
         self,
         db:Arc<Surreal<Client>>,
@@ -133,6 +137,7 @@ impl User {
         
     }
 
+    // returns whether the user is locked or not
     pub fn is_user_locked(&self) -> bool {
         self.locked_flag.unwrap()
     }

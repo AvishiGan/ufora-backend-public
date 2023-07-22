@@ -1,4 +1,4 @@
-use axum::{http::{Request, StatusCode}, middleware::Next, response::Response,};
+use axum::{http::{Request, StatusCode}, middleware::Next, response::Response, };
 use tower_cookies::Cookies;
 
 use crate::services::jwt;
