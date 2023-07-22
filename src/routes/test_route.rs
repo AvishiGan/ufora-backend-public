@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use axum::{
     Router,
-    routing::{get, post}, http::StatusCode, Json, extract::State
+    routing::{get, post}, http::{StatusCode, HeaderMap, request, Request}, Json, extract::{State, FromRequest}, Extension, body::Body
 };
 use surrealdb::{Surreal, engine::remote::ws::Client, sql::{Statement,statements::{BeginStatement, CancelStatement, SetStatement}, Statements, Subquery, Thing}};
 
@@ -20,6 +20,8 @@ pub fn get_test_router() -> Router<Arc<Surreal<Client>>> {
 
 async fn test_handler(
     State(db) : State<Arc<Surreal<Client>>>,
+    request: Request<Body>
 ) -> Result<(),StatusCode> {
+    let claim = request.extensions().get::<crate::models::user_claim::Claim>().unwrap();
     Ok(())
 }

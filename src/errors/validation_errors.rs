@@ -8,6 +8,7 @@ pub enum ValidationError {
     InvalidAge,
     InvalidPhoneNumber,
     InvalidDate { msg: String },
+    InvalidCredentials { msg: String },
 } 
 
 impl IntoResponse for ValidationError {
@@ -33,6 +34,9 @@ impl IntoResponse for ValidationError {
             ValidationError::InvalidDate { msg } => {
                 (axum::http::StatusCode::BAD_REQUEST, msg).into_response()
             },
+            ValidationError::InvalidCredentials { msg } => {
+                (axum::http::StatusCode::NOT_FOUND, msg).into_response()
+            }
         }
 
     }

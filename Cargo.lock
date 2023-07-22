@@ -341,6 +341,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "axum-auth"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "620b37645b77baab8160f93421568d7b3dd25da0a160fab38eb1c4ef611f6d98"
+dependencies = [
+ "async-trait",
+ "axum-core",
+ "base64 0.13.1",
+ "http",
+]
+
+[[package]]
 name = "axum-core"
 version = "0.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3530,6 +3542,7 @@ name = "ufora-backend"
 version = "0.1.0"
 dependencies = [
  "axum",
+ "axum-auth",
  "bcrypt 0.15.0",
  "cargo-watch",
  "chrono",

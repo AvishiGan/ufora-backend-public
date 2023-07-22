@@ -41,7 +41,7 @@ impl Company {
 
 
         match (self.email.clone(),self.name.clone()) {
-            (None,_) | (_,None) => Err(StatusCode::INTERNAL_SERVER_ERROR) ?,
+            (None,_) | (_,None) => Err(StatusCode::BAD_REQUEST) ?,
             (_,_) => {}
         }
 
@@ -64,4 +64,5 @@ impl Company {
         })
 
     }
+
 }
