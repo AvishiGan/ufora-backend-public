@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use axum::{http::StatusCode, extract::State, Json};
 use chrono::prelude::*;
-use surrealdb::{Surreal, engine::remote::ws::Client, sql::Thing};
+use surrealdb::{Surreal, engine::remote::ws::Client};
 
 use crate::services::{otp,email};
 

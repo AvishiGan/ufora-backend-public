@@ -118,7 +118,7 @@ impl User {
         #[derive(serde::Deserialize)]
         struct LoginAttemptUpdateResult {}
 
-        let response: Option<LoginAttemptUpdateResult> = match new_invalid_login_attempts  {
+        let _response: Option<LoginAttemptUpdateResult> = match new_invalid_login_attempts  {
             0..=4 => {
                 db.update(("user",self.id.unwrap().id))
                     .patch(PatchOp::replace("/invalid_login_attempts",new_invalid_login_attempts))
@@ -140,6 +140,14 @@ impl User {
     // returns whether the user is locked or not
     pub fn is_user_locked(&self) -> bool {
         self.locked_flag.unwrap()
+    }
+
+    pub fn get_user_type(&self) -> String {
+        self.user_type.as_ref().unwrap().clone()
+    }
+
+    pub fn get_user_id(&self) -> Thing {
+        self.user_id.as_ref().unwrap().clone()
     }
 
 }

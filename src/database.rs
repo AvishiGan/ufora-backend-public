@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use axum::response::IntoResponse;
 use surrealdb::{
     Surreal, engine::remote::ws::{Client, Ws},
     opt::auth::Root
