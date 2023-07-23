@@ -8,7 +8,7 @@ use surrealdb::{sql::{Thing, statements::{CreateStatement, SelectStatement}, Val
 use crate::services::password;
 
 // model for user
-#[derive(serde::Serialize,serde::Deserialize,Default)]
+#[derive(serde::Serialize,serde::Deserialize,Default,Debug)]
 pub struct User {
     id: Option<Thing>,
     username: Option<String>,
@@ -150,4 +150,27 @@ impl User {
         self.user_id.as_ref().unwrap().clone()
     }
 
+    pub async fn update_university_details(
+        self,
+        db:Arc<Surreal<Client>>,
+        university: Option<String>,
+        university_email: Option<String>
+    ) -> Result<(),StatusCode> {
+
+        match (university.clone(),university_email.clone()) {
+            (None,_) | (_,None) => {return Err(StatusCode::BAD_REQUEST)},
+            (_,_) => {}
+        }
+
+        let response: Result<String,surrealdb::Error> = db.update(("undergraduate",self.user_id.unwrap().id))
+            .patch(PatchOp::replace("/university",university.unwrap()))
+            .patch(PatchOp::replace("/university_email",university_email.unwrap()))
+            .patch(PatchOp::replace("/university_email_verified",false))
+            .await;
+
+        match response {
+            Ok(_) => Ok(()),
+            Err(e) => {println!("{:?} ",e);Ok(())}
+        }
+    }
 }

@@ -5,6 +5,7 @@ use::surrealdb::sql::{Thing,Table,Object,Value,Part,Fields,Field,Ident,Idiom,Out
     statements::CreateStatement
 };
 
+#[derive(serde::Deserialize,Debug)]
 pub struct Undergraduate {
     id: Option<Thing>,
     name: Option<String>,
