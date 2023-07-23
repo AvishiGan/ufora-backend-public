@@ -1,10 +1,9 @@
-use std::sync::Arc;
 use simple_collection_macros::bmap;
 
 use axum::http::StatusCode;
-use surrealdb::{sql::{
+use surrealdb::sql::{
     Thing, 
-    statements::{CreateStatement, InsertStatement},
+    statements::CreateStatement,
     Output,
     Fields,
     Field,
@@ -15,7 +14,7 @@ use surrealdb::{sql::{
     Table,
     Data,
     Idiom, Part, Ident
-}, Surreal, engine::remote::ws::Client};
+};
 
 
 
@@ -42,7 +41,7 @@ impl Company {
 
 
         match (self.email.clone(),self.name.clone()) {
-            (None,_) | (_,None) => Err(StatusCode::INTERNAL_SERVER_ERROR) ?,
+            (None,_) | (_,None) => Err(StatusCode::BAD_REQUEST) ?,
             (_,_) => {}
         }
 
@@ -65,4 +64,5 @@ impl Company {
         })
 
     }
+
 }
