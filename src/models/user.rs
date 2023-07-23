@@ -3,7 +3,7 @@ use std::{sync::Arc, vec};
 
 use axum::http::StatusCode;
 use simple_collection_macros::bmap;
-use surrealdb::{sql::{Thing, statements::{CreateStatement, SelectStatement}, Values, Value, Table, Data, Object, Strand, Output, Number, Fields, Limit, Cond, Expression, Part, Ident, Idiom, Field}, Surreal, engine::remote::ws::Client, opt::PatchOp};
+use surrealdb::{sql::{Thing, statements::{CreateStatement, SelectStatement, UpdateStatement}, Values, Value, Table, Data, Object, Strand, Output, Number, Fields, Limit, Cond, Expression, Part, Ident, Idiom, Field, Operator}, Surreal, engine::remote::ws::Client, opt::PatchOp};
 
 use crate::services::password;
 
@@ -170,7 +170,7 @@ impl User {
         let response: Result<String,surrealdb::Error> = db.update(("undergraduate",self.user_id.unwrap().id))
             .patch(PatchOp::replace("/university",university.unwrap()))
             .patch(PatchOp::replace("/university_email",university_email.unwrap()))
-            .patch(PatchOp::replace("/university_email_verified",false))
+            .patch(PatchOp::replace("/university_email_verification_flag",false))
             .await;
 
         match response {
@@ -178,4 +178,41 @@ impl User {
             Err(e) => {println!("{:?} ",e);Ok(())}
         }
     }
+
+    pub async fn update_email_verification(
+        db:Arc<Surreal<Client>>,
+        email: String
+    ) -> Result<(),StatusCode> {
+
+        let _response = db.query(
+            UpdateStatement {
+                what: Values(
+                    vec![Value::Table(Table("user".to_string()))]
+                ),
+                data: Some(Data::SetExpression(
+                    vec![
+                        (
+                            Idiom(vec![Part::Field(Ident("email_verification_flag".to_string()))]),
+                            Operator::Equal,
+                            Value::True
+                        )
+                    ]
+                )),
+                cond: Some(Cond(
+                    Value::Expression(Box::from(Expression {
+                        l: Value::Idiom(Idiom(vec![Part::Field(Ident("email".to_string()))])),
+                        o: surrealdb::sql::Operator::Equal,
+                        r: Value::Strand(Strand(email))
+                    })))
+                ),
+                output: None,
+                timeout: None,
+                parallel: false
+            }
+        ).await;
+
+        Ok(())
+    }
+    
+
 }

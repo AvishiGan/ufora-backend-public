@@ -1,6 +1,9 @@
+use std::sync::Arc;
+
 use simple_collection_macros::bmap;
 
 use axum::http::StatusCode;
+use surrealdb::{Surreal, engine::remote::ws::Client, sql::{statements::UpdateStatement, Operator, Cond, Expression}};
 use::surrealdb::sql::{Thing,Table,Object,Value,Part,Fields,Field,Ident,Idiom,Output,Data,Values,Strand,
     statements::CreateStatement
 };
@@ -45,5 +48,40 @@ impl Undergraduate {
             parallel: false,
         })
 
+    }
+
+    pub async fn update_university_email_verification(
+        db:Arc<Surreal<Client>>,
+        email: String
+    ) -> Result<(),StatusCode> {
+
+        let _response = db.query(
+            UpdateStatement {
+                what: Values(
+                    vec![Value::Table(Table("user".to_string()))]
+                ),
+                data: Some(Data::SetExpression(
+                    vec![
+                        (
+                            Idiom(vec![Part::Field(Ident("university_email_verification_flag".to_string()))]),
+                            Operator::Equal,
+                            Value::True
+                        )
+                    ]
+                )),
+                cond: Some(Cond(
+                    Value::Expression(Box::from(Expression {
+                        l: Value::Idiom(Idiom(vec![Part::Field(Ident("university_email".to_string()))])),
+                        o: surrealdb::sql::Operator::Equal,
+                        r: Value::Strand(Strand(email))
+                    })))
+                ),
+                output: None,
+                timeout: None,
+                parallel: false
+            }
+        ).await;
+
+        Ok(())
     }
 }
