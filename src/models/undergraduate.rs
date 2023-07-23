@@ -9,15 +9,13 @@ use::surrealdb::sql::{Thing,Table,Object,Value,Part,Fields,Field,Ident,Idiom,Out
 pub struct Undergraduate {
     id: Option<Thing>,
     name: Option<String>,
-    email: Option<String>,
 }
 
 impl Undergraduate {
-    pub fn from(name: Option<String>, email: Option<String>) -> Self {
+    pub fn from(name: Option<String>) -> Self {
         Self {
             id: None,
             name,
-            email,
         }
     }
 
@@ -25,9 +23,9 @@ impl Undergraduate {
         self
      ) -> Result<CreateStatement,StatusCode> {
 
-        match (self.name.clone(),self.email.clone()) {
-            (None,_) | (_, None) => Err(StatusCode::BAD_REQUEST) ?,
-            (_,_) => {}
+        match self.name.clone() {
+            None => Err(StatusCode::BAD_REQUEST) ?,
+            _ => {}
         }
 
         Ok(CreateStatement {
@@ -36,7 +34,6 @@ impl Undergraduate {
             ),
             data: Some(Data::ContentExpression(Value::Object( Object (bmap! {
                 "name".to_string() => Value::Strand(Strand(self.name.unwrap())),
-                "email".to_string() => Value::Strand(Strand(self.email.unwrap())),
             })))),
             output: Some(
                 Output::Fields(

@@ -97,3 +97,10 @@ pub async fn verify_otp(
     }
 
 }
+
+pub async fn verify_otp_university_email(
+    State(db): State<Arc<Surreal<Client>>>,
+    Json(otp_verification_request): Json<OTPVerificationRequest>
+) {
+
+}

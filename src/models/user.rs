@@ -16,17 +16,20 @@ pub struct User {
     locked_flag: Option<bool>,
     user_type: Option<String>,
     user_id: Option<Thing>,
+    email:Option<String>,
+    email_verification_flag: Option<bool>,
     pub invalid_login_attempts: Option<i32>,
 }
 
 impl User {
 
     // returns a new user model
-    pub fn from(username: Option<String>, password: Option<String>) -> Self {
+    pub fn from(username: Option<String>, password: Option<String>,email:Option<String>) -> Self {
         Self {
             id: None,
             username,
             password,
+            email,
             ..Default::default()
         }
     }
@@ -53,6 +56,8 @@ impl User {
                 "locked_flag".to_string() => Value::False,
                 "user_type".to_string() => Value::Strand(Strand(user_type)),
                 "user_id".to_string() => Value::Thing(Thing::from(user_id.unwrap())),
+                "email".to_string() => Value::Strand(Strand(self.email.unwrap())),
+                "email_verification_flag".to_string() => Value::False,
                 "invalid_login_attempts".to_string() => Value::Number(Number::Int(0))
             ))))),
             output: Some(Output::Null),
