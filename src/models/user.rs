@@ -3,7 +3,7 @@ use std::{sync::Arc, vec};
 
 use axum::http::StatusCode;
 use simple_collection_macros::bmap;
-use surrealdb::{sql::{Thing, statements::{CreateStatement, SelectStatement}, Values, Value, Table, Data, Object, Strand, Output, Number, Fields, Limit, Cond, Expression, Part, Ident, Idiom, Field}, Surreal, engine::remote::ws::Client, opt::PatchOp};
+use surrealdb::{sql::{Thing, statements::{CreateStatement, SelectStatement, UpdateStatement}, Values, Value, Table, Data, Object, Strand, Output, Number, Fields, Limit, Cond, Expression, Part, Ident, Idiom, Field, Operator}, Surreal, engine::remote::ws::Client, opt::PatchOp};
 
 use crate::services::password;
 
@@ -16,17 +16,20 @@ pub struct User {
     locked_flag: Option<bool>,
     user_type: Option<String>,
     user_id: Option<Thing>,
+    email:Option<String>,
+    email_verification_flag: Option<bool>,
     pub invalid_login_attempts: Option<i32>,
 }
 
 impl User {
 
     // returns a new user model
-    pub fn from(username: Option<String>, password: Option<String>) -> Self {
+    pub fn from(username: Option<String>, password: Option<String>,email:Option<String>) -> Self {
         Self {
             id: None,
             username,
             password,
+            email,
             ..Default::default()
         }
     }
@@ -53,6 +56,8 @@ impl User {
                 "locked_flag".to_string() => Value::False,
                 "user_type".to_string() => Value::Strand(Strand(user_type)),
                 "user_id".to_string() => Value::Thing(Thing::from(user_id.unwrap())),
+                "email".to_string() => Value::Strand(Strand(self.email.unwrap())),
+                "email_verification_flag".to_string() => Value::False,
                 "invalid_login_attempts".to_string() => Value::Number(Number::Int(0))
             ))))),
             output: Some(Output::Null),
@@ -165,7 +170,7 @@ impl User {
         let response: Result<String,surrealdb::Error> = db.update(("undergraduate",self.user_id.unwrap().id))
             .patch(PatchOp::replace("/university",university.unwrap()))
             .patch(PatchOp::replace("/university_email",university_email.unwrap()))
-            .patch(PatchOp::replace("/university_email_verified",false))
+            .patch(PatchOp::replace("/university_email_verification_flag",false))
             .await;
 
         match response {
@@ -173,4 +178,41 @@ impl User {
             Err(e) => {println!("{:?} ",e);Ok(())}
         }
     }
+
+    pub async fn update_email_verification(
+        db:Arc<Surreal<Client>>,
+        email: String
+    ) -> Result<(),StatusCode> {
+
+        let _response = db.query(
+            UpdateStatement {
+                what: Values(
+                    vec![Value::Table(Table("user".to_string()))]
+                ),
+                data: Some(Data::SetExpression(
+                    vec![
+                        (
+                            Idiom(vec![Part::Field(Ident("email_verification_flag".to_string()))]),
+                            Operator::Equal,
+                            Value::True
+                        )
+                    ]
+                )),
+                cond: Some(Cond(
+                    Value::Expression(Box::from(Expression {
+                        l: Value::Idiom(Idiom(vec![Part::Field(Ident("email".to_string()))])),
+                        o: surrealdb::sql::Operator::Equal,
+                        r: Value::Strand(Strand(email))
+                    })))
+                ),
+                output: None,
+                timeout: None,
+                parallel: false
+            }
+        ).await;
+
+        Ok(())
+    }
+    
+
 }

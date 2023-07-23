@@ -17,7 +17,7 @@ pub struct UndergraduateRegistrationRequest {
 
 impl UndergraduateRegistrationRequest {
     pub fn get_undergraduate_and_user_models(self) -> (Undergraduate,User) {
-        (Undergraduate::from(self.name,self.email),User::from(self.username,self.password))
+        (Undergraduate::from(self.name),User::from(self.username,self.password,self.email))
     }
 }
 
@@ -69,6 +69,7 @@ pub enum UpdateUniversityDetailsResponse {
     Unsuccessfull {message:String}
 }
 
+// handler for adding university details
 pub async fn add_university_details(
     State(db): State<Arc<Surreal<Client>>>,
     Json(university_details): Json<UniversityDetailsRequest>,
@@ -111,7 +112,7 @@ pub struct CompanyRegistrationRequest {
 
 impl CompanyRegistrationRequest {
     pub fn get_company_and_user_models(self) -> (Company,User) {
-        (Company::from(self.name,self.email),User::from(self.username,self.password))
+        (Company::from(self.name),User::from(self.username,self.password,self.email))
     }
 }
 

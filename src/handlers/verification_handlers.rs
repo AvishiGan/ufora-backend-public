@@ -5,7 +5,7 @@ use axum::{http::StatusCode, extract::State, Json};
 use chrono::prelude::*;
 use surrealdb::{Surreal, engine::remote::ws::Client};
 
-use crate::services::{otp,email};
+use crate::{services::{otp,email}, models::user::User};
 
 // request struct for sending otp to email
 #[derive(serde::Deserialize)]
@@ -80,8 +80,9 @@ pub async fn verify_otp(
     match result {
         Some(otp) => {
             if otp.expires_at > Utc.from_local_datetime(&chrono::Local::now().naive_local()).single().unwrap() {
-                if otp.otp == otp_verification_request.otp {
-                    let _response:Option<OTP> = db.delete(("otp",otp_verification_request.email)).await.unwrap();
+                if otp.otp == otp_verification_request.otp.clone() {
+                    let _response:Option<OTP> = db.delete(("otp",otp_verification_request.email.clone())).await.unwrap();
+                    User::update_email_verification(db.clone(), otp_verification_request.email.clone()).await.unwrap();
                     Ok(Json(OTPVerificationResponse {
                         message:"OTP has been verified successfully".to_string()
                     }))
@@ -96,4 +97,32 @@ pub async fn verify_otp(
         None => Err(StatusCode::BAD_REQUEST)
     }
 
+}
+
+pub async fn verify_otp_university_email(
+    State(db): State<Arc<Surreal<Client>>>,
+    Json(otp_verification_request): Json<OTPVerificationRequest>
+) -> Result<Json<OTPVerificationResponse>,StatusCode> {
+
+    let result: Option<OTP> = db.select(("otp",otp_verification_request.email.clone())).await.unwrap();
+
+    match result {
+        Some(otp) => {
+            if otp.expires_at > Utc.from_local_datetime(&chrono::Local::now().naive_local()).single().unwrap() {
+                if otp.otp == otp_verification_request.otp.clone() {
+                    let _response:Option<OTP> = db.delete(("otp",otp_verification_request.email.clone())).await.unwrap();
+                    User::update_email_verification(db.clone(), otp_verification_request.email.clone()).await.unwrap();
+                    Ok(Json(OTPVerificationResponse {
+                        message:"OTP has been verified successfully".to_string()
+                    }))
+                } else {
+                    Err(StatusCode::BAD_REQUEST)
+                }
+            } else {
+                let _response:Option<OTP> = db.delete(("otp",otp_verification_request.email)).await.unwrap();
+                Err(StatusCode::BAD_REQUEST)
+            }
+        },
+        None => Err(StatusCode::BAD_REQUEST)
+    }
 }
