@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use axum::{http::StatusCode,Json, extract::State};
+use axum::{http::{StatusCode, Response},Json, extract::State};
 
 use surrealdb::{Surreal, engine::remote::ws::Client, sql::Thing};
 
@@ -51,6 +51,52 @@ pub async fn register_an_undergraduate(
         },
         Err(e) => {println!("{:?}",e); Err(StatusCode::INTERNAL_SERVER_ERROR)}
     }
+
+}
+
+// request struct for adding university details
+#[derive(serde::Deserialize,Debug)]
+pub struct UniversityDetailsRequest {
+    pub username: Option<String>,
+    pub university:Option<String>,
+    pub university_email:Option<String>,
+}
+
+// response struct for adding university details
+#[derive(serde::Serialize)]
+pub enum UpdateUniversityDetailsResponse {
+    Successfull {message:String},
+    Unsuccessfull {message:String}
+}
+
+pub async fn add_university_details(
+    State(db): State<Arc<Surreal<Client>>>,
+    Json(university_details): Json<UniversityDetailsRequest>,
+) -> (StatusCode,Json<UpdateUniversityDetailsResponse>) {
+
+    if university_details.username.is_none() || university_details.university.is_none() || university_details.university_email.is_none() {
+        return (StatusCode::BAD_REQUEST,Json(UpdateUniversityDetailsResponse::Unsuccessfull {message:"Invalid request".to_string()}));
+    }
+
+    let user = User::retrieve_user_from_database(db.clone(), university_details.username.unwrap()).await;
+
+    match user {
+        Ok(user) => {
+
+            let response = user.update_university_details(db.clone(), university_details.university, university_details.university_email).await;
+
+            match response {
+                Ok(_) => { (StatusCode::OK,Json(UpdateUniversityDetailsResponse::Successfull {message:"University details have been added successfully".to_string()}))},
+                Err(StatusCode::BAD_REQUEST) => { (StatusCode::BAD_REQUEST,Json(UpdateUniversityDetailsResponse::Unsuccessfull {message:"Invalid request".to_string()}))},
+                Err(e) => {println!("{:?}",e); (StatusCode::INTERNAL_SERVER_ERROR,Json(UpdateUniversityDetailsResponse::Unsuccessfull {message:"University details could not be added".to_string()}))}
+            }
+
+        },
+        Err(e) => {println!("{:?}",e); (StatusCode::NOT_FOUND,Json(UpdateUniversityDetailsResponse::Unsuccessfull {message:"User could not be found".to_string()}))}
+    }
+
+
+    
 
 }
 
