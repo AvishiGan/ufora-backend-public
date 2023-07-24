@@ -3,7 +3,7 @@ use chrono::{DateTime, Utc};
 use rand::Rng;
 
 // struct for storing otp
-#[derive(serde::Serialize,serde::Deserialize)]
+#[derive(serde::Serialize,serde::Deserialize,Debug)]
 pub struct OTP {
     pub otp:String,
     pub created_at:DateTime<Utc>,
