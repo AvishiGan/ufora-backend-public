@@ -68,7 +68,7 @@ impl User {
     }
     
     // returns the user from the database
-    pub async fn retrieve_user_from_database(
+    pub async fn retrieve_user_from_database_by_username(
         db:Arc<Surreal<Client>>,username: String
     ) -> Result<Self,StatusCode> {
 
@@ -214,5 +214,52 @@ impl User {
         Ok(())
     }
     
+    pub async fn get_user_by_email(
+        db:Arc<Surreal<Client>>,
+        email: String
+    ) -> Result<Self,StatusCode> {
+
+        let mut response = db.query(SelectStatement {
+            expr: Fields (
+                vec![Field::All],
+                true
+            ),
+            what: Values(
+                vec![Value::Table(Table("user".to_string()))]
+            ),
+            cond:Some(Cond(
+                Value::Expression(Box::from(Expression {
+                    l: Value::Idiom(Idiom(vec![Part::Field(Ident("email".to_string()))])),
+                    o: surrealdb::sql::Operator::Equal,
+                    r: Value::Strand(Strand(email))
+                })))
+            ),
+            group: None,
+            order: None,
+            limit: Some(Limit(Value::Number(Number::Int(1)))),
+            start: None,
+            fetch: None,
+            version: None,
+            split:None,
+            timeout:None,
+            parallel:false
+
+        }).await.unwrap();
+
+        let users: Option<Self> = response.take(0).unwrap();
+
+        match users {
+            Some(user) => Ok(user),
+            None => Err(StatusCode::NOT_FOUND)
+        }
+
+    }
+
+    pub fn get_user_email(&self) -> String {
+        match self.email.clone() {
+            Some(email) => email,
+            None => "".to_string()
+        }
+    }
 
 }

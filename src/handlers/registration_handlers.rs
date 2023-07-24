@@ -79,7 +79,7 @@ pub async fn add_university_details(
         return (StatusCode::BAD_REQUEST,Json(UpdateUniversityDetailsResponse::Unsuccessfull {message:"Invalid request".to_string()}));
     }
 
-    let user = User::retrieve_user_from_database(db.clone(), university_details.username.unwrap()).await;
+    let user = User::retrieve_user_from_database_by_username(db.clone(), university_details.username.unwrap()).await;
 
     match user {
         Ok(user) => {
