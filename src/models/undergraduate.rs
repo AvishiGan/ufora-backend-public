@@ -3,7 +3,7 @@ use std::sync::Arc;
 use simple_collection_macros::bmap;
 
 use axum::http::StatusCode;
-use surrealdb::{Surreal, engine::remote::ws::Client, sql::{statements::UpdateStatement, Operator, Cond, Expression}};
+use surrealdb::{Surreal, engine::remote::ws::Client, sql::{statements::UpdateStatement, Operator, Cond, Expression}, opt::PatchOp};
 use::surrealdb::sql::{Thing,Table,Object,Value,Part,Fields,Field,Ident,Idiom,Output,Data,Values,Strand,
     statements::CreateStatement
 };
@@ -83,5 +83,29 @@ impl Undergraduate {
         ).await;
 
         Ok(())
+    }
+
+    pub async fn update_university_details(
+        user_id: Thing,
+        db:Arc<Surreal<Client>>,
+        university: Option<String>,
+        university_email: Option<String>
+    ) -> Result<(),StatusCode> {
+
+        match (university.clone(),university_email.clone()) {
+            (None,_) | (_,None) => {return Err(StatusCode::BAD_REQUEST)},
+            (_,_) => {}
+        }
+
+        let response: Result<String,surrealdb::Error> = db.update(("undergraduate",user_id.id))
+            .patch(PatchOp::replace("/university",university.unwrap()))
+            .patch(PatchOp::replace("/university_email",university_email.unwrap()))
+            .patch(PatchOp::replace("/university_email_verification_flag",false))
+            .await;
+
+        match response {
+            Ok(_) => Ok(()),
+            Err(e) => {println!("{:?} ",e);Ok(())}
+        }
     }
 }
