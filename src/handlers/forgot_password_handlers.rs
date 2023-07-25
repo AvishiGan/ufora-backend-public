@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use axum::{http::StatusCode, extract::State, Json};
+use dotenvy_macro::dotenv;
 use magic_crypt::{MagicCryptTrait, new_magic_crypt};
 use chrono::prelude::*;
 use surrealdb::{Surreal, engine::remote::ws::Client, opt::PatchOp, sql::{Value, Strand}};
@@ -58,7 +59,7 @@ pub async fn verify_email_and_send_otp(
                 expires_at:utc + chrono::Duration::minutes(10)
                 }).await.unwrap();
 
-            let mcrypt = new_magic_crypt!("le password", 256);
+            let mcrypt = new_magic_crypt!(dotenv!("ENCRYPTION_KEY"), 256);
             let encrypted_email = mcrypt.encrypt_str_to_base64(&forgot_password_request.email);
 
             match result {
@@ -95,7 +96,7 @@ pub async fn verify_forgot_password_otp(
     Json(otp_verification_request): Json<OTPVerificationRequest>
 ) -> (StatusCode,Json<OTPVerificationResponse>) {
 
-    let mcrypt = new_magic_crypt!("le password", 256);
+    let mcrypt = new_magic_crypt!(dotenv!("ENCRYPTION_KEY"), 256);
     let decrypted_email = mcrypt.decrypt_base64_to_string(&otp_verification_request.token);
 
     match decrypted_email {
@@ -163,7 +164,7 @@ pub async fn reset_password(
     Json(reset_password_request): Json<ResetPasswordRequest>
 ) -> (StatusCode,Json<ResetPasswordResponse>) {
 
-    let mcrypt = new_magic_crypt!("le password", 256);
+    let mcrypt = new_magic_crypt!(dotenv!("ENCRYPTION_KEY"), 256);
     let decrypted_password_reset_token = mcrypt.decrypt_base64_to_string(&reset_password_request.password_reset_token);
 
     match decrypted_password_reset_token {
