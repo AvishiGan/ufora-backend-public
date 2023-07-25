@@ -29,7 +29,7 @@ pub async fn login_via_platform(
 ) -> (StatusCode,Json<LoginResponse>) {
 
     // retrieve user from database
-    let user = User::retrieve_user_from_database(db.clone(),login_request.username.unwrap()).await;
+    let user = User::retrieve_user_from_database_by_username(db.clone(),login_request.username.unwrap()).await;
 
     match user {
         Err(_) => {

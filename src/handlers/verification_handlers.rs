@@ -5,20 +5,12 @@ use axum::{http::StatusCode, extract::State, Json};
 use chrono::prelude::*;
 use surrealdb::{Surreal, engine::remote::ws::Client};
 
-use crate::{services::{otp,email}, models::{user::User, undergraduate::Undergraduate}};
+use crate::{services::{otp::{self, OTP},email}, models::{user::User, undergraduate::Undergraduate}};
 
 // request struct for sending otp to email
 #[derive(serde::Deserialize)]
 pub struct OTPRequest {
     email:String
-}
-
-// struct for storing otp
-#[derive(serde::Serialize,serde::Deserialize)]
-pub struct OTP {
-    otp:String,
-    created_at:DateTime<Utc>,
-    expires_at:DateTime<Utc>
 }
 
 // response struct for sending otp to email
