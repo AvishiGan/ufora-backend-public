@@ -84,7 +84,7 @@ pub async fn add_university_details(
     match user {
         Ok(user) => {
 
-            let response = user.update_university_details(db.clone(), university_details.university, university_details.university_email).await;
+            let response = Undergraduate::update_university_details(user.get_user_id(), db.clone(), university_details.university, university_details.university_email).await;
 
             match response {
                 Ok(_) => { (StatusCode::OK,Json(UpdateUniversityDetailsResponse::Successfull {message:"University details have been added successfully".to_string()}))},
