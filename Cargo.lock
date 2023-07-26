@@ -766,6 +766,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e496a50fda8aacccc86d7529e2c1e0892dbd0f898a6b5645b5561b89c3210efa"
 
 [[package]]
+name = "cors"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9d2dacfa7c8e6a88bacdbd500047e86ac32f67a3706d5b55a1d7b36c80efbc2f"
+
+[[package]]
 name = "cpufeatures"
 version = "0.2.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3686,6 +3692,7 @@ dependencies = [
  "bcrypt 0.15.0",
  "cargo-watch",
  "chrono",
+ "cors",
  "dotenvy",
  "dotenvy_macro",
  "jsonwebtoken",

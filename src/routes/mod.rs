@@ -9,9 +9,10 @@ use std::sync::Arc;
 
 use axum::{
     Router, 
-    middleware
+    middleware, http::{method, Method}
 };
 use tower_cookies::CookieManagerLayer;
+use tower_http::cors::{CorsLayer, Any};
 
 use crate::middlewares;
 
@@ -22,6 +23,10 @@ use surrealdb::{Surreal, engine::remote::ws::Client};
 
 
 pub fn get_router() -> Router<Arc<Surreal<Client>>> {
+
+    let cors = CorsLayer::new()
+        .allow_methods(vec![Method::GET, Method::POST])
+        .allow_origin(Any);
     
     Router::new()
     .merge(get_logout_router())
@@ -32,5 +37,6 @@ pub fn get_router() -> Router<Arc<Surreal<Client>>> {
     .merge(get_registration_router())
     .merge(verification_router::get_verification_router())
     .layer(CookieManagerLayer::new())
+    .layer(cors)
 
 }
