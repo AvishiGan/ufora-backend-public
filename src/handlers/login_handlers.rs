@@ -51,6 +51,8 @@ pub async fn login_via_platform(
     // check whether password is correct
     match crate::services::password::verify_password(login_request.password.unwrap(),user.get_password().unwrap()) {
         Ok(false)  => {
+
+            // update invalid login attempts
             let new_invalid_login_attempts = user.invalid_login_attempts.unwrap() + 1;
             user.update_login_attempts(db.clone(),new_invalid_login_attempts).await;
             return (StatusCode::UNAUTHORIZED,Json(LoginResponse::InvalidLogin { message: "Invalid Login Credentials".to_string()} ))
@@ -64,7 +66,7 @@ pub async fn login_via_platform(
     // create jwt token
     let token = jwt::get_jwt(user.get_user_id().id.to_string(),user.get_user_type()).await.unwrap();
 
-    // set cookie
+    // create cookie with flags
     let cookie = Cookie::build("_Secure-jwt", token.clone())
         .domain("localhost")
         .path("/")
@@ -72,6 +74,7 @@ pub async fn login_via_platform(
         .http_only(true)
         .finish();
 
+    // set cookie
     cookies.add(cookie);
 
     (StatusCode::OK,Json(LoginResponse::Success { message: "Login Successful".to_string(), token}))

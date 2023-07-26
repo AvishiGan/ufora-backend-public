@@ -147,14 +147,17 @@ impl User {
         self.locked_flag.unwrap()
     }
 
+    // returns user type
     pub fn get_user_type(&self) -> String {
         self.user_type.as_ref().unwrap().clone()
     }
 
+    // returns user id
     pub fn get_user_id(&self) -> Thing {
         self.user_id.as_ref().unwrap().clone()
     }
 
+    // returns whether the user is verified or not
     pub async fn update_email_verification(
         db:Arc<Surreal<Client>>,
         email: String
@@ -189,7 +192,8 @@ impl User {
 
         Ok(())
     }
-    
+
+    // returns user by email
     pub async fn get_user_by_email(
         db:Arc<Surreal<Client>>,
         email: String

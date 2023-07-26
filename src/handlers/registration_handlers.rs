@@ -33,14 +33,20 @@ pub async fn register_an_undergraduate(
     Json(company_details): Json<UndergraduateRegistrationRequest>,
 ) -> Result<Json<UndergraduateRegistrationResponse>,StatusCode> {
 
+    // get undergraduate and user models
     let (undergraduate,user) = company_details.get_undergraduate_and_user_models();
 
+    // get query for registering an undergraduate and execute it
     let response = db.query(undergraduate.get_register_query().await?).await;
 
     match response {
+
         Ok(mut response) => {
 
+            // get undergraduate id
             let undergraduate_id:Result<Option<Thing>,surrealdb::Error> = response.take(0);
+
+            // get query for creating an undergraduate user and execute it
             let response = db.query(user.get_create_user_query("undergraduate".to_string(),undergraduate_id.unwrap()).await.unwrap()).await;
             
             match response {
@@ -49,6 +55,8 @@ pub async fn register_an_undergraduate(
             }
 
         },
+
+        // return error if query execution fails
         Err(e) => {println!("{:?}",e); Err(StatusCode::INTERNAL_SERVER_ERROR)}
     }
 
@@ -75,24 +83,38 @@ pub async fn add_university_details(
     Json(university_details): Json<UniversityDetailsRequest>,
 ) -> (StatusCode,Json<UpdateUniversityDetailsResponse>) {
 
+    // check whether username, university and university email are present or not
     if university_details.username.is_none() || university_details.university.is_none() || university_details.university_email.is_none() {
         return (StatusCode::BAD_REQUEST,Json(UpdateUniversityDetailsResponse::Unsuccessfull {message:"Invalid request".to_string()}));
     }
 
+    // retrieve user from database
     let user = User::retrieve_user_from_database_by_username(db.clone(), university_details.username.unwrap()).await;
 
     match user {
+
+        // update university details if user is found
         Ok(user) => {
 
+            // update university details
             let response = Undergraduate::update_university_details(user.get_user_id(), db.clone(), university_details.university, university_details.university_email).await;
 
             match response {
+
+                // return success if university details are updated successfully
                 Ok(_) => { (StatusCode::OK,Json(UpdateUniversityDetailsResponse::Successfull {message:"University details have been added successfully".to_string()}))},
+
+                // return bad request if university details are not updated successfully, invalid inputs given
                 Err(StatusCode::BAD_REQUEST) => { (StatusCode::BAD_REQUEST,Json(UpdateUniversityDetailsResponse::Unsuccessfull {message:"Invalid request".to_string()}))},
+
+                // return internal server error if university details are not updated successfully, database error
                 Err(e) => {println!("{:?}",e); (StatusCode::INTERNAL_SERVER_ERROR,Json(UpdateUniversityDetailsResponse::Unsuccessfull {message:"University details could not be added".to_string()}))}
+
             }
 
         },
+
+        // return not found if user is not found
         Err(e) => {println!("{:?}",e); (StatusCode::NOT_FOUND,Json(UpdateUniversityDetailsResponse::Unsuccessfull {message:"User could not be found".to_string()}))}
     }
 
@@ -128,14 +150,19 @@ pub async fn register_a_company(
     Json(company_details): Json<CompanyRegistrationRequest>,
 ) -> Result<Json<CompanyRegistrationResponse>,StatusCode> {
 
+    // get company and user models
     let (company,user) = company_details.get_company_and_user_models();
 
+    // get query for registering a company and execute it
     let response = db.query(company.get_register_query().await?).await;
 
     match response {
         Ok(mut response) => {
 
+            // get company id
             let company_id:Result<Option<Thing>,surrealdb::Error> = response.take(0);
+
+            // get query for creating a company user and execute it
             let response = db.query(user.get_create_user_query("company".to_string(),company_id.unwrap()).await.unwrap()).await;
             
             match response {

@@ -10,6 +10,7 @@ pub struct OTP {
     pub expires_at:DateTime<Utc>
 }
 
+// function to generate otp
 pub fn get_an_otp() -> Result<String,StatusCode> {
 
     let otp = rand::thread_rng().gen_range(100000..999999);
