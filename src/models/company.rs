@@ -1,10 +1,9 @@
-use std::sync::Arc;
 use simple_collection_macros::bmap;
 
 use axum::http::StatusCode;
-use surrealdb::{sql::{
+use surrealdb::sql::{
     Thing, 
-    statements::{CreateStatement, InsertStatement},
+    statements::CreateStatement,
     Output,
     Fields,
     Field,
@@ -15,7 +14,7 @@ use surrealdb::{sql::{
     Table,
     Data,
     Idiom, Part, Ident
-}, Surreal, engine::remote::ws::Client};
+};
 
 
 
@@ -23,16 +22,14 @@ use surrealdb::{sql::{
 pub struct Company {
     id: Option<Thing>,
     name: Option<String>,
-    email: Option<String>
 }
 
 impl Company {
 
-    pub fn from(name: Option<String>, email: Option<String> ) -> Self {
+    pub fn from(name: Option<String>) -> Self {
         Self {
             id:None,
             name,
-            email
         }
     }
 
@@ -41,9 +38,9 @@ impl Company {
     ) -> Result<CreateStatement,StatusCode> {
 
 
-        match (self.email.clone(),self.name.clone()) {
-            (None,_) | (_,None) => Err(StatusCode::INTERNAL_SERVER_ERROR) ?,
-            (_,_) => {}
+        match self.name.clone() {
+            None => Err(StatusCode::BAD_REQUEST) ?,
+            _ => {}
         }
 
         Ok(CreateStatement {
@@ -52,7 +49,6 @@ impl Company {
             ),
             data: Some(Data::ContentExpression(Value::Object( Object (bmap! {
                 "name".to_string() => Value::Strand(Strand(self.name.unwrap())),
-                "email".to_string() => Value::Strand(Strand(self.email.unwrap())),
             })))),
             output: Some(
                 Output::Fields(
@@ -65,4 +61,5 @@ impl Company {
         })
 
     }
+
 }
