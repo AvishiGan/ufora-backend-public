@@ -127,13 +127,13 @@ impl User {
             0..=4 => {
                 db.update(("user",self.id.unwrap().id))
                     .patch(PatchOp::replace("/invalid_login_attempts",new_invalid_login_attempts))
-                    .await.unwrap()
+                    .await.unwrap_or(None)
             },
             5 => {
                 db.update(("user",self.id.unwrap().id))
                     .patch(PatchOp::replace("/invalid_login_attempts",new_invalid_login_attempts))
                     .patch(PatchOp::replace("/locked_flag",true))
-                    .await.unwrap()
+                    .await.unwrap_or(None)
             }
             _ => {
                 None
