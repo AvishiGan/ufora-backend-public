@@ -10,6 +10,7 @@ use crate::{services::jwt, models::user::User};
 #[derive(serde::Deserialize,Debug)]
 pub struct LoginRequest {
     pub username: Option<String>,
+    pub email: Option<String>,
     pub password: Option<String>,
 }
 
@@ -28,12 +29,19 @@ pub async fn login_via_platform(
     Json(login_request): Json<LoginRequest>,
 ) -> (StatusCode,Json<LoginResponse>) {
 
+    match login_request.password.clone() {
+        None => {
+            return (StatusCode::BAD_REQUEST,Json(LoginResponse::InvalidLogin { message: "Invalid Login Credentials".to_string()}))
+        }
+        Some(_) => {}
+    }
+
     // retrieve user from database
-    let user = User::retrieve_user_from_database_by_username(db.clone(),login_request.username.unwrap()).await;
+    let user = User::get_user_by_email_or_username(db.clone(),login_request.email.clone(),login_request.username.clone()).await;
 
     match user {
         Err(_) => {
-            return (StatusCode::NOT_FOUND,Json(LoginResponse::InvalidLogin { message: "Invalid Login Credentials".to_string()}))
+            return (StatusCode::BAD_REQUEST,Json(LoginResponse::InvalidLogin { message: "Invalid Login Credentials".to_string()}))
         }
         Ok(_) => {}
     }
@@ -65,6 +73,8 @@ pub async fn login_via_platform(
 
     // create jwt token
     let token = jwt::get_jwt(user.get_user_id().id.to_string(),user.get_user_type()).await.unwrap();
+
+    user.update_login_attempts(db.clone(),0).await;
 
     // create cookie with flags
     let cookie = Cookie::build("_Secure-jwt", token.clone())

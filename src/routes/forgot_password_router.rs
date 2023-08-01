@@ -5,7 +5,7 @@ use crate::handlers::forgot_password_handlers;
 
 use axum::{
     Router, 
-    routing::{get, post}
+    routing::post
 };
 use surrealdb::{Surreal, engine::remote::ws::Client};
 

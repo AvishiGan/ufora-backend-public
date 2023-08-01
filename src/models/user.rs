@@ -1,9 +1,10 @@
 
 use std::{sync::Arc, vec};
 
-use axum::http::StatusCode;
+use axum::http::{StatusCode, response};
 use simple_collection_macros::bmap;
 use surrealdb::{sql::{Thing, statements::{CreateStatement, SelectStatement, UpdateStatement}, Values, Value, Table, Data, Object, Strand, Output, Number, Fields, Limit, Cond, Expression, Part, Ident, Idiom, Field, Operator}, Surreal, engine::remote::ws::Client, opt::PatchOp};
+use surrealdb_extra::query_builder::{Query,filter::{RelationalOperator,LogicalOperator}};
 
 use crate::services::password;
 
@@ -69,7 +70,8 @@ impl User {
     
     // returns the user from the database
     pub async fn retrieve_user_from_database_by_username(
-        db:Arc<Surreal<Client>>,username: String
+        db:Arc<Surreal<Client>>,
+        username: String
     ) -> Result<Self,StatusCode> {
 
         let mut response = db.query(SelectStatement {
@@ -241,5 +243,38 @@ impl User {
             None => "".to_string()
         }
     }
+
+    pub async fn get_user_by_email_or_username(
+        db:Arc<Surreal<Client>>,
+        email: Option<String>,
+        username: Option<String>
+    ) -> Result<Self,StatusCode> {
+
+        match (email.clone(),username.clone()) {
+            (None,None) => return Err(StatusCode::BAD_REQUEST),
+            (_,_) => {}
+        }
+
+        let response = Query::new().from("user",None).limit(1)
+            .field("username").field("email").field("password").field("user_id").field("user_type").field("locked_flag").field("invalid_login_attempts").field("id")
+            .where_filter()
+            .filter(("username",RelationalOperator::Equal,username.unwrap_or("".to_string()),LogicalOperator::Or)).unwrap_right()
+            .filter(("email",RelationalOperator::Equal,email.unwrap_or("".to_string()),LogicalOperator::End)).unwrap_left()
+            .execute(&db).await;
+
+        match response {
+            Err(_) => return Err(StatusCode::INTERNAL_SERVER_ERROR),
+            Ok(_) => {}
+        }
+            
+        let mut response = response.unwrap();
+
+        let user: Option<Self> = response.take(0).unwrap();
+
+        match user {
+            Some(user) => Ok(user),
+            None => Err(StatusCode::NOT_FOUND)
+        }
+    } 
 
 }
