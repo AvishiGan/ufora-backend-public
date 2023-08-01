@@ -1,4 +1,5 @@
 use axum::http::StatusCode;
+use chrono::prelude::*;
 
 use jsonwebtoken::{
     encode,
@@ -10,6 +11,7 @@ use jsonwebtoken::{
 };
 use dotenvy_macro::dotenv;
 
+// claim struct for jwt
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct Claim {
     user_id: String,
@@ -19,6 +21,7 @@ pub struct Claim {
     username: Option<String>,
 }
 
+// implementation of claim struct to get user id and user type
 impl Claim {
     pub fn get_user_id(&self) -> String {
         self.user_id.clone()
@@ -28,10 +31,13 @@ impl Claim {
     }
 }
 
+// function to get jwt
 pub async fn get_jwt(user_id: String,user_type:String) -> Result<String,StatusCode> {
 
-    let now = chrono::Utc::now().timestamp() as usize;
+    // get current time from local timezone
+    let now = Utc.from_local_datetime(&chrono::Local::now().naive_local()).single().unwrap().timestamp() as usize;
 
+    // encode jwt
     Ok(encode(
         &Header::default(),
         &Claim {
@@ -46,8 +52,10 @@ pub async fn get_jwt(user_id: String,user_type:String) -> Result<String,StatusCo
 
 }
 
+// function to verify jwt
 pub async fn verify_jwt(token: String) -> Result<Claim,StatusCode> {
     
+    // decode jwt
     let token_msg = decode::<Claim>(
         &token,
         &DecodingKey::from_secret(dotenv!("JWT_SECRET").as_bytes()), 
@@ -56,6 +64,7 @@ pub async fn verify_jwt(token: String) -> Result<Claim,StatusCode> {
         _ => {println!("{:?}",e); StatusCode::BAD_REQUEST}
     } )?;
 
+    // return decoded jwt
     Ok(token_msg.claims)
 
 }

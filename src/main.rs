@@ -12,6 +12,7 @@ mod models;
 #[tokio::main]
 async fn main() {
 
+    // load environment variables
     dotenv().ok();
     
     app::run().await.unwrap();

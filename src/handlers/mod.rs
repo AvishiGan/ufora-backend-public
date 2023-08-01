@@ -9,3 +9,6 @@ pub mod registration_handlers;
 
 // handlers related to verification -> otp, email verification
 pub mod verification_handlers;
+
+// handlers related to forgot password -> email verification and reset password
+pub mod forgot_password_handlers;
