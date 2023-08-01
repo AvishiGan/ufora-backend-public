@@ -9,7 +9,7 @@ use std::sync::Arc;
 
 use axum::{
     Router, 
-    middleware, http::{method, Method}
+    middleware, http::Method
 };
 use tower_cookies::CookieManagerLayer;
 use tower_http::cors::{CorsLayer, Any};

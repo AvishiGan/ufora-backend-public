@@ -1493,6 +1493,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "heck"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "95505c38b4572b2d910cecb0281560f54b440a19336cbbcb27bf6ce6adc6f5a8"
+
+[[package]]
 name = "hermit-abi"
 version = "0.1.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3161,6 +3167,28 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "73473c0e59e6d5812c5dfe2a064a6444949f089e20eec9a2e5506596494e4623"
 
 [[package]]
+name = "strum"
+version = "0.24.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "063e6045c0e62079840579a7e47a355ae92f60eb74daaf156fb1e84ba164e63f"
+dependencies = [
+ "strum_macros",
+]
+
+[[package]]
+name = "strum_macros"
+version = "0.24.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1e385be0d24f186b4ce2f9982191e7101bb737312ad61c1f2f984f34bcf85d59"
+dependencies = [
+ "heck",
+ "proc-macro2",
+ "quote",
+ "rustversion",
+ "syn 1.0.109",
+]
+
+[[package]]
 name = "subtle"
 version = "2.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3230,6 +3258,32 @@ checksum = "0e0f2a75e22417f587cf23a5efa9f680f4002b8655b8481a01ee5e787f15d82b"
 dependencies = [
  "quote",
  "syn 1.0.109",
+]
+
+[[package]]
+name = "surrealdb_extra"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3fc494db80aec065f291d1c58d1fd49a8d7033ca36ba1169bb6bcd6426ded3ea"
+dependencies = [
+ "async-trait",
+ "either",
+ "serde",
+ "strum",
+ "surrealdb",
+ "surrealdb_extra_derive",
+ "thiserror",
+]
+
+[[package]]
+name = "surrealdb_extra_derive"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5714cbf5691f5555356c9433aa65d4e71c1597eb7e96896d51b2989c54f8b10c"
+dependencies = [
+ "quote",
+ "surrealdb",
+ "syn 2.0.24",
 ]
 
 [[package]]
@@ -3703,6 +3757,7 @@ dependencies = [
  "serde_json",
  "simple-collection-macros",
  "surrealdb",
+ "surrealdb_extra",
  "tokio",
  "tower-cookies",
  "tower-http",

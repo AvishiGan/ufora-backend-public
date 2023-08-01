@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use axum::{http::{StatusCode, Response},Json, extract::State};
+use axum::{http::StatusCode,Json, extract::State};
 
 use surrealdb::{Surreal, engine::remote::ws::Client, sql::Thing};
 
