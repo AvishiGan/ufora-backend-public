@@ -15,7 +15,7 @@ use crate::services::{otp::get_an_otp,email::send_email};
 
 pub fn get_test_router() -> Router<Arc<Surreal<Client>>> {
     Router::new()
-        .route("/test", post(test_handler))
+        .route("/api/test", post(test_handler))
 }
 
 async fn test_handler(

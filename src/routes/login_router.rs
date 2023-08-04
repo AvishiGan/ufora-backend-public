@@ -11,7 +11,7 @@ use surrealdb::{Surreal, engine::remote::ws::Client};
 
 pub fn get_login_router() -> Router<Arc<Surreal<Client>>> {
     Router::new()
-        .route("/login", post(login_handlers::login_via_platform))
+        .route("/api/login", post(login_handlers::login_via_platform))
     
     
 }

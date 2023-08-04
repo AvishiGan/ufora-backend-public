@@ -10,7 +10,7 @@ use surrealdb::{Surreal, engine::remote::ws::Client};
 
 pub fn get_logout_router() -> Router<Arc<Surreal<Client>>> {
     Router::new()
-        .route("/logout", post(logout_handlers::logout))
+        .route("/api/logout", post(logout_handlers::logout))
     
     
 }
