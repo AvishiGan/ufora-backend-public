@@ -244,6 +244,13 @@ impl User {
         }
     }
 
+    pub fn get_user_username(&self) -> String {
+        match self.username.clone() {
+            Some(username) => username,
+            None => "".to_string()
+        }
+    }
+
     pub async fn get_user_by_email_or_username(
         db:Arc<Surreal<Client>>,
         email: Option<String>,

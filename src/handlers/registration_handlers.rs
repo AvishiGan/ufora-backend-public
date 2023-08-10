@@ -31,13 +31,29 @@ pub struct UndergraduateRegistrationResponse {
 pub async fn register_an_undergraduate(
     State(db): State<Arc<Surreal<Client>>>,
     Json(company_details): Json<UndergraduateRegistrationRequest>,
-) -> Result<Json<UndergraduateRegistrationResponse>,StatusCode> {
+) -> (StatusCode,Json<UndergraduateRegistrationResponse>) {
 
     // get undergraduate and user models
     let (undergraduate,user) = company_details.get_undergraduate_and_user_models();
 
+    let available_user = User::get_user_by_email_or_username(db.clone(), Some(user.get_user_email()), Some(user.get_user_username())).await;
+
+    match available_user {
+        Ok(usr) if user.get_user_email() == usr.get_user_email() => return (StatusCode::BAD_REQUEST,Json(UndergraduateRegistrationResponse {message:"Email already exists".to_string()})),
+        Ok(_) => return (StatusCode::BAD_REQUEST,Json(UndergraduateRegistrationResponse {message:"Username already exists".to_string()})),
+        Err(StatusCode::NOT_FOUND) => {}
+        Err(e) => {println!("{:?}",e); return (StatusCode::INTERNAL_SERVER_ERROR,Json(UndergraduateRegistrationResponse {message:"Undergraduate account could not be created".to_string()}))}
+    }
+
+    let undergraduate_registration_statement = undergraduate.get_register_query().await;
+
+    let undergraduate_registration_statement = match undergraduate_registration_statement {
+        Ok(statement) => statement,
+        Err(e) => {println!("{:?}",e); return (StatusCode::INTERNAL_SERVER_ERROR,Json(UndergraduateRegistrationResponse {message:"Undergraduate account could not be created".to_string()}))}
+    };
+
     // get query for registering an undergraduate and execute it
-    let response = db.query(undergraduate.get_register_query().await?).await;
+    let response = db.query(undergraduate_registration_statement).await;
 
     match response {
 
@@ -50,14 +66,18 @@ pub async fn register_an_undergraduate(
             let response = db.query(user.get_create_user_query("undergraduate".to_string(),undergraduate_id.unwrap()).await.unwrap()).await;
             
             match response {
-                Ok(_) => Ok(Json(UndergraduateRegistrationResponse {message:"Undergraduate account has been created successfully".to_string()})),
-                Err(e) => {println!("{:?}",e); Err(StatusCode::INTERNAL_SERVER_ERROR)}
+                Ok(_) => (StatusCode::OK,Json(UndergraduateRegistrationResponse {message:"Undergraduate account has been created successfully".to_string()})),
+                Err(e) => {println!("{:?}",e); (StatusCode::INTERNAL_SERVER_ERROR,Json(UndergraduateRegistrationResponse { 
+                    message: "Undergraduate account could not be created".to_string()
+                } ))}
             }
 
         },
 
         // return error if query execution fails
-        Err(e) => {println!("{:?}",e); Err(StatusCode::INTERNAL_SERVER_ERROR)}
+        Err(e) => {println!("{:?}",e); (StatusCode::INTERNAL_SERVER_ERROR,Json(UndergraduateRegistrationResponse { 
+            message: "Undergraduate account could not be created".to_string()} ))
+        }
     }
 
 }
