@@ -168,13 +168,29 @@ pub struct CompanyRegistrationResponse {
 pub async fn register_a_company(
     State(db): State<Arc<Surreal<Client>>>,
     Json(company_details): Json<CompanyRegistrationRequest>,
-) -> Result<Json<CompanyRegistrationResponse>,StatusCode> {
+) -> (StatusCode,Json<CompanyRegistrationResponse>) {
 
     // get company and user models
     let (company,user) = company_details.get_company_and_user_models();
 
+    let available_user = User::get_user_by_email_or_username(db.clone(), Some(user.get_user_email()), Some(user.get_user_username())).await;
+
+    match available_user {
+        Ok(usr) if user.get_user_email() == usr.get_user_email() => return (StatusCode::BAD_REQUEST,Json(CompanyRegistrationResponse {message:"Email already exists".to_string()})),
+        Ok(_) => return (StatusCode::BAD_REQUEST,Json(CompanyRegistrationResponse {message:"Username already exists".to_string()})),
+        Err(StatusCode::NOT_FOUND) => {}
+        Err(e) => {println!("{:?}",e); return (StatusCode::INTERNAL_SERVER_ERROR,Json(CompanyRegistrationResponse {message:"Company account could not be created".to_string()}))}
+    }
+
+    let company_registration_statement = company.get_register_query().await;
+
+    let company_registration_statement = match company_registration_statement {
+        Ok(statement) => statement,
+        Err(e) => {println!("{:?}",e); return (StatusCode::INTERNAL_SERVER_ERROR,Json(CompanyRegistrationResponse {message:"Company account could not be created".to_string()}))}
+    };
+
     // get query for registering a company and execute it
-    let response = db.query(company.get_register_query().await?).await;
+    let response = db.query(company_registration_statement).await;
 
     match response {
         Ok(mut response) => {
@@ -186,12 +202,15 @@ pub async fn register_a_company(
             let response = db.query(user.get_create_user_query("company".to_string(),company_id.unwrap()).await.unwrap()).await;
             
             match response {
-                Ok(_) => Ok(Json(CompanyRegistrationResponse { message: "Company account has been created successfully".to_string() })),
-                Err(e) => {println!("{:?}",e); Err(StatusCode::INTERNAL_SERVER_ERROR)}
+                Ok(_) => (StatusCode::OK,Json(CompanyRegistrationResponse {message:"Company account has been created successfully".to_string()})),
+                Err(e) => {println!("{:?}",e); (StatusCode::INTERNAL_SERVER_ERROR,Json(CompanyRegistrationResponse { 
+                    message: "Company account could not be created".to_string()
+                } ))}
             }
 
         },
-        Err(e) => {println!("{:?}",e); Err(StatusCode::INTERNAL_SERVER_ERROR)}
+        Err(e) => {println!("{:?}",e); (StatusCode::INTERNAL_SERVER_ERROR,Json(CompanyRegistrationResponse { 
+            message: "Company account could not be created".to_string()} )) }
     }
 
 }
