@@ -13,8 +13,8 @@ pub enum Item {
 impl fmt::Display for Item {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Item::Table(table_name) => write!(f, " FROM {}", table_name),
-            Item::Record {tb, id} => write!(f, " FROM {}:{}", tb, id),
+            Item::Table(table_name) => write!(f, " {}", table_name),
+            Item::Record {tb, id} => write!(f, " {}:{}", tb, id),
         }
     }
 }
@@ -163,6 +163,41 @@ impl fmt::Display for OrderBy {
     }
 }
 
+// struct to specify the type of return value
+// for no return value, Return::NONE is used
+// for difference between the new and old value, Return::Difference is used
+// for old value, Return::Before is used
+// for new value, Return::After is used
+// for specific fields, Return::Fields{fields: vec![String::from("field_name_1"),String::from("field_name_2")]} is used
+pub enum Return {
+    NONE,
+    Difference,
+    Before,
+    After,
+    Fields {fields: Vec<String>},
+} 
+
+impl fmt::Display for Return {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Return::NONE => write!(f, " RETURN NONE"),
+            Return::Difference => write!(f, " RETURN DIFF"),
+            Return::Before => write!(f, " RETURN BEFORE"),
+            Return::After => write!(f, " RETURN AFTER"),
+            Return::Fields {fields} => {
+                let mut fields_string = String::from(" RETURN ");
+                for field in fields {
+                    fields_string.push_str(field);
+                    fields_string.push_str(", ");
+                }
+                fields_string.pop();
+                fields_string.pop();
+                write!(f, "{}", fields_string)
+            },
+        }
+    }
+}
+
 // to get a select query with known parameters
 // NOTE: if no condition is provided, pass None
 // NOTE: last expression connector is always ExpressionConnector::End
@@ -183,6 +218,8 @@ pub fn get_select_query(
     let mut  query = String::new();
 
     query.push_str(&column_names.to_string());
+
+    query.push_str(" FROM ");
 
     query.push_str(&table_name.to_string());
 
@@ -315,6 +352,7 @@ impl fmt::Display for DatabaseObject {
 pub fn get_insert_query_for_an_object(
     table_name: String,
     object: DatabaseObject,
+    result: Return
 ) -> String {
     let mut query = String::new();
 
@@ -323,6 +361,8 @@ pub fn get_insert_query_for_an_object(
     query.push_str(" ");
     query.push_str(&object.to_string());
 
+    query.push_str(&result.to_string());
+
     query
 }
 
@@ -330,6 +370,7 @@ pub fn get_insert_query_for_an_object(
 pub fn get_insert_query_for_an_array_of_objects(
     table_name: String,
     objects: Vec<DatabaseObject>,
+    result: Return,
 ) -> String {
     let mut query = String::new();
 
@@ -346,6 +387,8 @@ pub fn get_insert_query_for_an_array_of_objects(
     query.pop();
 
     query.push_str("]");
+
+    query.push_str(&result.to_string());
 
     query
 }
@@ -381,6 +424,26 @@ pub fn get_delete_query_with_conditions(
         query.push_str(&expression_1.to_string());
         query.push_str(&expression_2.to_string());
     }
+
+    query
+}
+
+// to create a record with a specific id or auto generated one
+pub fn get_create_query_for_an_object(
+    table_name: Item,
+    object: DatabaseObject,
+    result: Return,
+) -> String {
+
+    let mut query = String::from("CREATE ");
+
+    query.push_str(&table_name.to_string());
+
+    query.push_str(" CONTENT ");
+
+    query.push_str(&object.to_string());
+
+    query.push_str(&result.to_string());
 
     query
 }
