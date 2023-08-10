@@ -234,7 +234,7 @@ pub fn get_select_query(
             println!("No condition provided")
         }
         
-    }
+    } 
 
     if let Some(group_by) = group_by {
         query.push_str(&group_by.to_string());
