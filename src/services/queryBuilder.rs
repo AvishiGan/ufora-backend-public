@@ -1,5 +1,7 @@
 use core::fmt;
 
+use surrealdb::sql::Thing;
+
 
 // Item enum specifies whether the query is for a table or a record
 // for a table, Item::Table("table_name".to_string()) is used
@@ -13,8 +15,8 @@ pub enum Item {
 impl fmt::Display for Item {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Item::Table(table_name) => write!(f, " {}", table_name),
-            Item::Record {tb, id} => write!(f, " {}:{}", tb, id),
+            Item::Table(table_name) => write!(f, "{}", table_name),
+            Item::Record {tb, id} => write!(f, "{}:{}", tb, id),
         }
     }
 }
@@ -444,6 +446,29 @@ pub fn get_create_query_for_an_object(
     query.push_str(&object.to_string());
 
     query.push_str(&result.to_string());
+
+    query
+}
+
+pub fn get_relate_query_with_content(
+    from: Thing,
+    to: Thing,
+    relation_name: String,
+    content: Option<DatabaseObject>
+) -> String {
+
+    let mut query = String::from("Relate ");
+
+    query.push_str(&from.to_string() );
+    query.push_str("->");
+    query.push_str(&relation_name);
+    query.push_str("->");
+    query.push_str(&to.to_string());
+
+    match content {
+        None => {}
+        Some(content) => query.push_str(&content.to_string())
+    }
 
     query
 }

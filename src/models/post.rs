@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{sync::Arc, fmt::format};
 
 use surrealdb::{Surreal, engine::remote::ws::Client, sql::Thing};
 use chrono::prelude::*;
@@ -7,8 +7,11 @@ use crate::services::queryBuilder::{
     Item,
     Return,
     DatabaseObject,
-    get_create_query_for_an_object
+    get_create_query_for_an_object,
+    get_relate_query_with_content
 };
+
+use super::user;
 
 
 #[derive(serde::Serialize,serde::Deserialize,Debug)]
@@ -53,7 +56,8 @@ impl Post {
 
     pub async fn save(
         &self,
-        db: Arc<Surreal<Client>>
+        db: Arc<Surreal<Client>>,
+        user_id: Thing
     ) -> Result<(),String> {
 
         match(self.caption.clone(),self.access_level.clone(),self.content.clone()) {
@@ -77,29 +81,37 @@ impl Post {
             id: Thing
         }
 
-        let record_id = match response {
+        let post_id = match response {
             Ok(mut response) => {
                 let record_id:Result<Option<RecordID>,surrealdb::Error> = response.take(0);
                 match record_id {
                     Ok(Some(record_id)) => record_id.id,
                     Ok(None) => return Err("Post could not be created".to_string()),
-                    Err(e) => {println!("{:?}",e); return Err("Post could not be created".to_string())}
+                    Err(e) => return Err(format!("{:?}",e.to_string()))
                 }  
             },
-            Err(e) => {println!("{:?}",e); return Err("Post could not be created".to_string())}
+            Err(e) => return Err(format!("{:?}",e.to_string()))
         };
 
-        println!("{:?}",record_id.id);
-
-        Ok(())
+        self.link_user_with_post(db.clone(),user_id,post_id).await
     }
 
-    fn link_user(
+    async fn link_user_with_post(
         &self,
-        user_id: Thing
+        db: Arc<Surreal<Client>>,
+        user_id: Thing,
+        post_id:Thing
     ) -> Result<(),String> {
 
-        Ok(())
+        let relate_query = get_relate_query_with_content(user_id, post_id, "create_post".to_string(), None);
+
+        let response = db.query(relate_query).await;
+
+        match response {
+            Ok(_) => Ok(()),
+            Err(e) => Err(format!("{:?}",e.to_string()))
+        }
+
     }
 
 }
