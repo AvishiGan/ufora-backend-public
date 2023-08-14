@@ -3,3 +3,4 @@ pub mod user;
 pub mod undergraduate;
 pub mod user_claim;
 pub mod profile;
+pub mod post;

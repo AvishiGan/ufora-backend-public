@@ -21,3 +21,5 @@ pub mod test_handlers;
 
 // handlers related to profile
 pub mod profile_handlers;
+// handlers related to posts -> create, update, delete, get
+pub mod post_handlers;
