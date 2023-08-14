@@ -1,6 +1,7 @@
 mod login_router;
 mod logout_router;
 mod registration_router;
+mod profile_router;
 mod test_route;
 mod verification_router;
 mod forgot_password_router;
@@ -21,6 +22,8 @@ use logout_router::get_logout_router;
 use registration_router::get_registration_router;
 use surrealdb::{Surreal, engine::remote::ws::Client};
 
+use self::profile_router::get_profile_router;
+
 
 pub fn get_router() -> Router<Arc<Surreal<Client>>> {
 
@@ -30,6 +33,7 @@ pub fn get_router() -> Router<Arc<Surreal<Client>>> {
     
     Router::new()
     .merge(get_logout_router())
+    .merge(get_profile_router())
     .merge(test_route::get_test_router())
     .layer(middleware::from_fn(middlewares::auth::validate_jwt))
     .merge(get_login_router())

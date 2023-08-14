@@ -18,3 +18,6 @@ pub mod forgot_password_handlers;
 
 // handlers related to test
 pub mod test_handlers;
+
+// handlers related to profile
+pub mod profile_handlers;
