@@ -87,6 +87,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ea50b14b7a4b9343f8c627a7a53c52076482bd4bdad0a24fd3ec533ed616cc2c"
 
 [[package]]
+name = "anyhow"
+version = "1.0.72"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3b13c32d80ecc7ab747b80c3784bce54ee8a7a0cc4fbda9bf4cda2cf6fe90854"
+
+[[package]]
 name = "approx"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -847,6 +853,18 @@ dependencies = [
  "darling_core",
  "quote",
  "syn 1.0.109",
+]
+
+[[package]]
+name = "dateparser"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "18e537db44ee4822af930a9a2c9eedfcde9d47e01c6731fbf34ea01b5a7ccf7d"
+dependencies = [
+ "anyhow",
+ "chrono",
+ "lazy_static",
+ "regex",
 ]
 
 [[package]]
@@ -3748,6 +3766,7 @@ dependencies = [
  "cargo-watch",
  "chrono",
  "cors",
+ "dateparser",
  "dotenvy",
  "dotenvy_macro",
  "jsonwebtoken",
