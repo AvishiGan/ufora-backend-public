@@ -12,3 +12,9 @@ pub mod verification_handlers;
 
 // handlers related to forgot password -> email verification and reset password
 pub mod forgot_password_handlers;
+
+
+
+
+// handlers related to test
+pub mod test_handlers;

@@ -9,7 +9,7 @@ use surrealdb::{Surreal, engine::remote::ws::Client, sql::{Statement,statements:
 
 use chrono::prelude::*;
 
-use crate::models::{undergraduate::Undergraduate,user::User};
+use crate::{models::{undergraduate::Undergraduate,user::User}, handlers::test_handlers};
 
 use crate::services::{otp::get_an_otp,email::send_email};
 
@@ -19,6 +19,7 @@ get_delete_query_with_conditions, get_create_query_for_an_object};
 pub fn get_test_router() -> Router<Arc<Surreal<Client>>> {
     Router::new()
         .route("/api/test", post(test_handler))
+        .route("/api/test/:id", get(test_handlers::test_route))
 }
 
 async fn test_handler(
