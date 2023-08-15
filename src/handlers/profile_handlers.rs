@@ -1,4 +1,3 @@
-use core::borrow;
 use std::sync::Arc;
 
 use axum::{extract::State, http::StatusCode, Json};
@@ -11,20 +10,9 @@ use surrealdb::{
     Surreal,
 };
 
-use crate::models::{profile::Profile, user::{User, self}};
+use crate::models::{profile::Profile, user::User};
 
-fn merge(a: Value, b: Value) -> Value {
-    match (a, b) {
-        (Value::Object(mut a), Value::Object(b)) => {
-            for (k, v) in b {
-                let entry = a.entry(k).or_insert(Value::Null);
-                *entry = merge(entry.clone(), v);
-            }
-            Value::Object(a)
-        }
-        (_, b) => b,
-    }
-}
+use crate::services::merge_json::merge;
 
 #[derive(Serialize, Deserialize, Debug)]
 
@@ -56,13 +44,15 @@ impl OnlyProfile {
     }
 }
 
-// response struct for all responspones
+// response struct for create profile
 #[derive(Serialize)]
 pub struct ProfileResponse {
     message: String,
 }
 
-// Create user profile for logged in user
+
+// create a user profile
+// _________________________________________________________
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ReturnID {
     id: Thing,
@@ -117,8 +107,8 @@ pub async fn create_profile(
 pub struct ProfileRequest {
     id: Option<String>,
 }
-
-// return user profile
+// retrieve only the profile using id
+// _________________________________________________________
 pub async fn get_profile(
     State(db): State<Arc<Surreal<Client>>>,
     Json(profile_request): Json<ProfileRequest>,
@@ -163,8 +153,8 @@ pub struct ProfileRequestUsername {
     email: Option<String>,
 }
 
-// Object {"address": Null, "contact": String("+94771231234"), "date_of_birth": String("2000-10-29T00:00:00Z"), "email": String("binuridesilva27@gmail.com"), "email_verification_flag": Null, "gmap": Null, "id": String("profile:hlk48mmzp8nva6jg35ti"), "intro": String("hi i am Abdullah"), "invalid_login_attempts": Number(0), "locked_flag": Bool(false), "name": String("Abdullah Jasmin"), "password": String("$2b$14$4C2ZWzlpbjMSlHPpHpl.L.bUHsH0wAFcZmjXZIjlc30i3tvYZ3T/W"), "profile_pic": String("dp"), "user_id": String("undergraduate:hlk48mmzp8nva6jg35ti"), "user_type": String("undergraduate"), "username": String("user1")}
-
+// retrieve profile using email or username
+// _________________________________________________________
 pub async fn get_user_profile(
     State(db): State<Arc<Surreal<Client>>>,
     Json(user_profile): Json<ProfileRequestUsername>,
