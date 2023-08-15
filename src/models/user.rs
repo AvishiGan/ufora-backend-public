@@ -285,3 +285,20 @@ impl User {
     } 
 
 }
+
+
+impl Into<serde_json::Value> for User {
+    fn into(self) -> serde_json::Value {
+        serde_json::json!({
+            "id":self.id,
+            "username":self.username,
+            "password":self.password,
+            "locked_flag":self.locked_flag,
+            "user_type":self.user_type,
+            "user_id":self.user_id,
+            "email":self.email,
+            "email_verification_flag":self.email_verification_flag,
+            "invalid_login_attempts":self.invalid_login_attempts
+        })
+    }
+}
