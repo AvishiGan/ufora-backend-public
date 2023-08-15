@@ -17,7 +17,6 @@ use crate::services::merge_json::merge;
 #[derive(Serialize, Deserialize, Debug)]
 
 pub struct OnlyProfile {
-    name: Option<String>,
     intro: Option<String>,
     profile_pic: Option<String>,
     contact: Option<String>,
@@ -34,7 +33,7 @@ impl OnlyProfile {
         };
         Profile::from(
             Some(id),
-            self.name,
+    
             self.intro,
             self.profile_pic,
             self.date_of_birth,

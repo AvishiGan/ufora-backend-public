@@ -22,7 +22,6 @@ fn generate_embed_link(address: Option<String>, api_key: &str) -> String {
 #[derive(serde::Serialize, serde::Deserialize, Default, Debug)]
 pub struct Profile {
     id: Option<Thing>,
-    name: Option<String>,
     intro: Option<String>,
     profile_pic: Option<String>,
     contact: Option<String>,
@@ -39,7 +38,6 @@ impl Profile {
     // returns a new profile model
     pub fn from(
         id: Option<Thing>,
-        name: Option<String>,
         intro: Option<String>,
         profile_pic: Option<String>,
         date_of_birth: Option<String>,
@@ -48,7 +46,6 @@ impl Profile {
     ) -> Self {
         Self {
             id,
-            name,
             intro,
             profile_pic,
             date_of_birth,
@@ -68,7 +65,6 @@ impl Profile {
 
         let mut map = bmap! {
             "id".to_string() => Value::Thing(self.id.unwrap()),
-            "name".to_string() => Value::Strand(Strand(self.name.unwrap())),
             "intro".to_string() => Value::Strand(Strand(self.intro.unwrap())),
             "profile_pic".to_string() => Value::Strand(Strand(self.profile_pic.unwrap())),
             "contact".to_string() => Value::Strand(Strand(self.contact.unwrap())),
@@ -137,7 +133,6 @@ impl Into<serde_json::Value> for Profile {
     fn into(self) -> serde_json::Value {
         serde_json::json!({
             "id": self.id,
-            "name": self.name,
             "intro": self.intro,
             "profile_pic": self.profile_pic,
             "contact": self.contact,
