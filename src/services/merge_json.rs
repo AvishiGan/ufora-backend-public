@@ -1,5 +1,6 @@
 use serde_json::Value;
 
+/// Merges two JSON objects, recursively and returns the merged object.
 pub fn merge(a: Value, b: Value) -> Value {
     match (a, b) {
         (Value::Object(mut a), Value::Object(b)) => {
