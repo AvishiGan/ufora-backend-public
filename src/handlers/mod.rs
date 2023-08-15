@@ -13,13 +13,14 @@ pub mod verification_handlers;
 // handlers related to forgot password -> email verification and reset password
 pub mod forgot_password_handlers;
 
-
-
-
 // handlers related to test
 pub mod test_handlers;
 
 // handlers related to profile
 pub mod profile_handlers;
+
 // handlers related to posts -> create, update, delete, get
 pub mod post_handlers;
+
+//handlers related to blogs -> create, update, delete, get
+pub mod blog_handlers;
