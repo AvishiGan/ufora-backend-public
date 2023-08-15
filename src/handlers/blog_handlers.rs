@@ -8,14 +8,14 @@ use crate::models::blog;
 #[derive(serde::Deserialize, Debug)]
 pub struct BlogCreateRequest {
     pub title: Option<String>,
-    pub content : BlogCreateRequestContent, 
+    pub content: Option<BlogCreateRequestContent>,
 }
 
 #[derive(serde::Deserialize, Debug)]
 pub struct BlogCreateRequestContent {
     pub time: Option<i128>,
     pub blocks: Option<Vec<blog::BlogBlock>>,
-    pub version: Option<String> 
+    pub version: Option<String>,
 }
 
 #[derive(serde::Serialize)]
@@ -28,8 +28,17 @@ pub async fn create_a_blog(
     claim: crate::models::user_claim::Claim,
     Json(blog_request): Json<BlogCreateRequest>
 ) -> (StatusCode, Json<BlogCreateResponse>) {
-    
-    let blog_create_request_content = blog_request.content;
+    match blog_request.content {
+        None => {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(BlogCreateResponse { message: "Content is required".to_string() }),
+            );
+        }
+        Some(_) => (),
+    }
+
+    let blog_create_request_content = blog_request.content.unwrap();
 
     let new_blog_content = blog::BlogContent {
         time: Some(blog_create_request_content.time.unwrap().to_string()),
@@ -37,14 +46,17 @@ pub async fn create_a_blog(
         version: blog_create_request_content.version,
     };
 
-    let new_blog = blog::Blog::new(blog_request.title,new_blog_content);
+    let new_blog = blog::Blog::new(blog_request.title, new_blog_content);
 
     match new_blog.save(db, Some(claim.get_surrealdb_thing())).await {
-        Ok(_) => (StatusCode::OK, Json(BlogCreateResponse { message: "success".to_string() })),
-        Err(_) =>
+        Ok(_) =>
             (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(BlogCreateResponse { message: "failed".to_string() }),
+                StatusCode::OK,
+                Json(BlogCreateResponse { message: "Blog created successfully".to_string() }),
             ),
+        Err(e) => {
+            println!("Error: {}", e);
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(BlogCreateResponse { message: e }))
+        }
     }
 }

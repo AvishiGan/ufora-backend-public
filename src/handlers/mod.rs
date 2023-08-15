@@ -24,3 +24,6 @@ pub mod post_handlers;
 
 //handlers related to blogs -> create, update, delete, get
 pub mod blog_handlers;
+
+// handlers related to projects -> create, update, delete, get
+pub mod project_handlers;

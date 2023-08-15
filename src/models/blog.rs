@@ -2,9 +2,7 @@ use std::sync::Arc;
 
 use surrealdb::{ sql::Thing, Surreal, engine::remote::ws::Client };
 
-use crate::services::queryBuilder::{get_relate_query_with_content};
-
-use super::user;
+use crate::services::queryBuilder::get_relate_query_with_content;
 
 #[derive(serde::Deserialize, serde::Serialize, Debug, Clone)]
 pub struct Blog {
@@ -36,7 +34,7 @@ pub struct BlogBlockData {
 }
 
 impl Blog {
-    pub fn new(blog_title: Option<String>,blog_content: BlogContent) -> Self {
+    pub fn new(blog_title: Option<String>, blog_content: BlogContent) -> Self {
         Self {
             id: None,
             title: blog_title,
@@ -44,15 +42,7 @@ impl Blog {
         }
     }
 
-    pub fn get_blog_content(&self) -> Option<BlogContent> {
-        self.content.clone()
-    }
-
-    pub async fn save(
-        &self, db: Arc<Surreal<Client>>,
-        user: Option<Thing>
-    ) -> Result<(), String> {
-
+    pub async fn save(&self, db: Arc<Surreal<Client>>, user: Option<Thing>) -> Result<(), String> {
         match user.clone() {
             None => {
                 println!("Error: {:?}", "No user provided");
@@ -68,7 +58,6 @@ impl Blog {
             }
             Some(_) => {}
         }
-
 
         let response: Result<Option<Self>, surrealdb::Error> = db
             .create("blog")
@@ -102,8 +91,12 @@ impl Blog {
         blog_id: Thing,
         user_id: Thing
     ) -> Result<(), String> {
-
-        let query = get_relate_query_with_content(user_id, blog_id, "create_blog".to_string(), None);
+        let query = get_relate_query_with_content(
+            user_id,
+            blog_id,
+            "create_blog".to_string(),
+            None
+        );
 
         let response = db.query(query).await;
 
@@ -112,8 +105,7 @@ impl Blog {
                 println!("Error: {:?}", e);
                 Err(format!("{:?}", e))
             }
-            Ok(_) => { Ok(())}
+            Ok(_) => { Ok(()) }
         }
-
     }
 }
