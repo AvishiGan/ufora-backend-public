@@ -1,21 +1,34 @@
-use std::{sync::Arc, vec};
+use std::{ sync::Arc, vec };
 
-use axum::http::{response, StatusCode};
+use axum::http::{ response, StatusCode };
 use simple_collection_macros::bmap;
 use surrealdb::{
     engine::remote::ws::Client,
     opt::PatchOp,
     sql::{
-        statements::{CreateStatement, SelectStatement, UpdateStatement},
-        Cond, Data, Expression, Field, Fields, Ident, Idiom, Limit, Number, Object, Operator,
-        Output, Part, Strand, Table, Thing, Value, Values,
+        statements::{ CreateStatement, SelectStatement, UpdateStatement },
+        Cond,
+        Data,
+        Expression,
+        Field,
+        Fields,
+        Ident,
+        Idiom,
+        Limit,
+        Number,
+        Object,
+        Operator,
+        Output,
+        Part,
+        Strand,
+        Table,
+        Thing,
+        Value,
+        Values,
     },
     Surreal,
 };
-use surrealdb_extra::query_builder::{
-    filter::{LogicalOperator, RelationalOperator},
-    Query,
-};
+use surrealdb_extra::query_builder::{ filter::{ LogicalOperator, RelationalOperator }, Query };
 
 use crate::services::password;
 
@@ -49,20 +62,20 @@ impl User {
     pub async fn get_create_user_query(
         self,
         user_type: String,
-        user_id: Option<Thing>,
+        user_id: Option<Thing>
     ) -> Result<CreateStatement, StatusCode> {
-        match (
-            self.username.clone(),
-            self.password.clone(),
-            user_id.clone(),
-        ) {
+        match (self.username.clone(), self.password.clone(), user_id.clone()) {
             (None, _, _) | (_, None, _) | (_, _, None) => Err(StatusCode::BAD_REQUEST)?,
             (_, _, _) => {}
         }
 
         Ok(CreateStatement {
             what: Values(vec![Value::Table(Table("user".to_string()))]),
-            data: Some(Data::ContentExpression(Value::Object(Object(bmap!(
+            data: Some(
+                Data::ContentExpression(
+                    Value::Object(
+                        Object(
+                            bmap!(
                 "username".to_string() => Value::Strand(Strand(self.username.unwrap())),
                 "password".to_string() => Value::Strand(Strand(password::hash_password(self.password.unwrap())?)),
                 "locked_flag".to_string() => Value::False,
@@ -71,7 +84,11 @@ impl User {
                 "email".to_string() => Value::Strand(Strand(self.email.unwrap())),
                 "email_verification_flag".to_string() => Value::False,
                 "invalid_login_attempts".to_string() => Value::Number(Number::Int(0))
-            ))))),
+            )
+                        )
+                    )
+                )
+            ),
             output: Some(Output::Null),
             timeout: None,
             parallel: false,
@@ -81,17 +98,25 @@ impl User {
     // returns the user from the database
     pub async fn retrieve_user_from_database_by_username(
         db: Arc<Surreal<Client>>,
-        username: String,
+        username: String
     ) -> Result<Self, StatusCode> {
         let mut response = db
             .query(SelectStatement {
                 expr: Fields(vec![Field::All], true),
                 what: Values(vec![Value::Table(Table("user".to_string()))]),
-                cond: Some(Cond(Value::Expression(Box::from(Expression {
-                    l: Value::Idiom(Idiom(vec![Part::Field(Ident("username".to_string()))])),
-                    o: surrealdb::sql::Operator::Equal,
-                    r: Value::Strand(Strand(username)),
-                })))),
+                cond: Some(
+                    Cond(
+                        Value::Expression(
+                            Box::from(Expression {
+                                l: Value::Idiom(
+                                    Idiom(vec![Part::Field(Ident("username".to_string()))])
+                                ),
+                                o: surrealdb::sql::Operator::Equal,
+                                r: Value::Strand(Strand(username)),
+                            })
+                        )
+                    )
+                ),
                 group: None,
                 order: None,
                 limit: Some(Limit(Value::Number(Number::Int(1)))),
@@ -101,8 +126,7 @@ impl User {
                 split: None,
                 timeout: None,
                 parallel: false,
-            })
-            .await
+            }).await
             .unwrap();
 
         let users: Option<Self> = response.take(0).unwrap();
@@ -122,29 +146,25 @@ impl User {
     pub async fn update_login_attempts(
         self,
         db: Arc<Surreal<Client>>,
-        new_invalid_login_attempts: i32,
+        new_invalid_login_attempts: i32
     ) -> () {
         #[derive(serde::Deserialize)]
         struct LoginAttemptUpdateResult {}
 
         let _response: Option<LoginAttemptUpdateResult> = match new_invalid_login_attempts {
-            0..=4 => db
-                .update(("user", self.id.unwrap().id))
-                .patch(PatchOp::replace(
-                    "/invalid_login_attempts",
-                    new_invalid_login_attempts,
-                ))
-                .await
-                .unwrap_or(None),
-            5 => db
-                .update(("user", self.id.unwrap().id))
-                .patch(PatchOp::replace(
-                    "/invalid_login_attempts",
-                    new_invalid_login_attempts,
-                ))
-                .patch(PatchOp::replace("/locked_flag", true))
-                .await
-                .unwrap_or(None),
+            0..=4 =>
+                db
+                    .update(("user", self.id.unwrap().id))
+                    .patch(
+                        PatchOp::replace("/invalid_login_attempts", new_invalid_login_attempts)
+                    ).await
+                    .unwrap_or(None),
+            5 =>
+                db
+                    .update(("user", self.id.unwrap().id))
+                    .patch(PatchOp::replace("/invalid_login_attempts", new_invalid_login_attempts))
+                    .patch(PatchOp::replace("/locked_flag", true)).await
+                    .unwrap_or(None),
             _ => None,
         };
     }
@@ -171,28 +191,34 @@ impl User {
     // returns whether the user is verified or not
     pub async fn update_email_verification(
         db: Arc<Surreal<Client>>,
-        email: String,
+        email: String
     ) -> Result<(), StatusCode> {
-        let _response = db
-            .query(UpdateStatement {
-                what: Values(vec![Value::Table(Table("user".to_string()))]),
-                data: Some(Data::SetExpression(vec![(
-                    Idiom(vec![Part::Field(Ident(
-                        "email_verification_flag".to_string(),
-                    ))]),
-                    Operator::Equal,
-                    Value::True,
-                )])),
-                cond: Some(Cond(Value::Expression(Box::from(Expression {
-                    l: Value::Idiom(Idiom(vec![Part::Field(Ident("email".to_string()))])),
-                    o: surrealdb::sql::Operator::Equal,
-                    r: Value::Strand(Strand(email)),
-                })))),
-                output: None,
-                timeout: None,
-                parallel: false,
-            })
-            .await;
+        let _response = db.query(UpdateStatement {
+            what: Values(vec![Value::Table(Table("user".to_string()))]),
+            data: Some(
+                Data::SetExpression(
+                    vec![(
+                        Idiom(vec![Part::Field(Ident("email_verification_flag".to_string()))]),
+                        Operator::Equal,
+                        Value::True,
+                    )]
+                )
+            ),
+            cond: Some(
+                Cond(
+                    Value::Expression(
+                        Box::from(Expression {
+                            l: Value::Idiom(Idiom(vec![Part::Field(Ident("email".to_string()))])),
+                            o: surrealdb::sql::Operator::Equal,
+                            r: Value::Strand(Strand(email)),
+                        })
+                    )
+                )
+            ),
+            output: None,
+            timeout: None,
+            parallel: false,
+        }).await;
 
         Ok(())
     }
@@ -200,17 +226,25 @@ impl User {
     // returns user by email
     pub async fn get_user_by_email(
         db: Arc<Surreal<Client>>,
-        email: String,
+        email: String
     ) -> Result<Self, StatusCode> {
         let mut response = db
             .query(SelectStatement {
                 expr: Fields(vec![Field::All], true),
                 what: Values(vec![Value::Table(Table("user".to_string()))]),
-                cond: Some(Cond(Value::Expression(Box::from(Expression {
-                    l: Value::Idiom(Idiom(vec![Part::Field(Ident("email".to_string()))])),
-                    o: surrealdb::sql::Operator::Equal,
-                    r: Value::Strand(Strand(email)),
-                })))),
+                cond: Some(
+                    Cond(
+                        Value::Expression(
+                            Box::from(Expression {
+                                l: Value::Idiom(
+                                    Idiom(vec![Part::Field(Ident("email".to_string()))])
+                                ),
+                                o: surrealdb::sql::Operator::Equal,
+                                r: Value::Strand(Strand(email)),
+                            })
+                        )
+                    )
+                ),
                 group: None,
                 order: None,
                 limit: Some(Limit(Value::Number(Number::Int(1)))),
@@ -220,8 +254,7 @@ impl User {
                 split: None,
                 timeout: None,
                 parallel: false,
-            })
-            .await
+            }).await
             .unwrap();
 
         let users: Option<Self> = response.take(0).unwrap();
@@ -249,10 +282,12 @@ impl User {
     pub async fn get_user_by_email_or_username(
         db: Arc<Surreal<Client>>,
         email: Option<String>,
-        username: Option<String>,
+        username: Option<String>
     ) -> Result<Self, StatusCode> {
         match (email.clone(), username.clone()) {
-            (None, None) => return Err(StatusCode::BAD_REQUEST),
+            (None, None) => {
+                return Err(StatusCode::BAD_REQUEST);
+            }
             (_, _) => {}
         }
 
@@ -282,11 +317,12 @@ impl User {
                 LogicalOperator::End,
             ))
             .unwrap_left()
-            .execute(&db)
-            .await;
+            .execute(&db).await;
 
         match response {
-            Err(_) => return Err(StatusCode::INTERNAL_SERVER_ERROR),
+            Err(_) => {
+                return Err(StatusCode::INTERNAL_SERVER_ERROR);
+            }
             Ok(_) => {}
         }
 
@@ -299,9 +335,6 @@ impl User {
             None => Err(StatusCode::NOT_FOUND),
         }
     }
-
-
-
 }
 
 impl Into<serde_json::Value> for User {

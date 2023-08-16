@@ -1,23 +1,19 @@
 use std::sync::Arc;
 
-use axum::{extract::State, http::StatusCode, Json};
+use axum::{ extract::State, http::StatusCode, Json };
 
-use serde::{Deserialize, Serialize};
+use serde::{ Deserialize, Serialize };
 use serde_json::Value;
-use surrealdb::{
-    engine::remote::ws::Client,
-    sql::{Id, Thing},
-    Surreal, opt::PatchOp,
-};
+use surrealdb::{ engine::remote::ws::Client, sql::{ Id, Thing }, Surreal, opt::PatchOp };
 
 use crate::{
     models::{
-        company::{update_address, Company},
+        company::{ update_address, Company },
         profile::Profile,
-        undergraduate::{update_dob, Undergraduate},
+        undergraduate::{ update_dob, Undergraduate },
         user::User,
     },
-    services::queryBuilder::{get_select_query, Column, Expression, ExpressionConnector, Item},
+    services::queryBuilder::{ get_select_query, Column, Expression, ExpressionConnector, Item },
 };
 
 use crate::services::merge_json::merge;
@@ -25,43 +21,45 @@ use crate::services::merge_json::merge;
 // get the select query
 pub async fn get_by_user_id(
     table: Option<String>,
-    user_id: Option<String>,
+    user_id: Option<String>
 ) -> Result<String, StatusCode> {
     let string = get_select_query(
         Item::Table(table.clone().unwrap().to_string()),
         Column::All,
-        Some(vec![(
-            Expression::EqualTo(
-                "id".to_string(),
-                format!("{}:{}", table.unwrap(), user_id.unwrap()),
-            ),
-            ExpressionConnector::End,
-        )]),
+        Some(
+            vec![(
+                Expression::EqualTo(
+                    "id".to_string(),
+                    format!("{}:{}", table.unwrap(), user_id.unwrap())
+                ),
+                ExpressionConnector::End,
+            )]
+        ),
         None,
         None,
         None,
-        None,
+        None
     );
     Ok(string)
 }
-
 
 // update name
 pub async fn update_name(
     table: Option<String>,
     user_id: String,
     db: Arc<Surreal<Client>>,
-    name: Option<String>,
+    name: Option<String>
 ) -> Result<(), StatusCode> {
     match name {
-        None => return Err(StatusCode::BAD_REQUEST),
+        None => {
+            return Err(StatusCode::BAD_REQUEST);
+        }
         _ => {}
     }
 
     let response: Result<String, surrealdb::Error> = db
         .update((table.unwrap(), user_id))
-        .patch(PatchOp::replace("/name", name.unwrap().to_string()))
-        .await;
+        .patch(PatchOp::replace("/name", name.unwrap().to_string())).await;
 
     match response {
         Ok(_) => Ok(()),
@@ -71,7 +69,6 @@ pub async fn update_name(
         }
     }
 }
-
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct OnlyProfile {
@@ -110,7 +107,7 @@ pub struct ReturnID {
 pub async fn create_profile(
     claim: crate::models::user_claim::Claim,
     State(db): State<Arc<Surreal<Client>>>,
-    Json(profile_details): Json<OnlyProfile>,
+    Json(profile_details): Json<OnlyProfile>
 ) -> (StatusCode, Json<ProfileResponse>) {
     // println!("{:?}",claim.get_user_id());
 
@@ -126,9 +123,7 @@ pub async fn create_profile(
 
     // generating a create query for profile
     println!("{:?}", profile_detail);
-    let response = db
-        .query(profile_detail.get_profile_create_query().await.unwrap())
-        .await;
+    let response = db.query(profile_detail.get_profile_create_query().await.unwrap()).await;
 
     // based on the response return the status code and message
     match response {
@@ -143,9 +138,7 @@ pub async fn create_profile(
                     println!("undergraduate");
                     match dob {
                         Some(dob) => {
-                            update_dob(claim.get_user_id(), db.clone(), Some(dob))
-                                .await
-                                .unwrap();
+                            update_dob(claim.get_user_id(), db.clone(), Some(dob)).await.unwrap();
                             // println!("{:?}",response);
                         }
                         None => {
@@ -156,9 +149,11 @@ pub async fn create_profile(
                     println!("company");
                     match address {
                         Some(address) => {
-                            update_address(claim.get_user_id(), db.clone(), Some(address))
-                                .await
-                                .unwrap();
+                            update_address(
+                                claim.get_user_id(),
+                                db.clone(),
+                                Some(address)
+                            ).await.unwrap();
                             // println!("{:?}",response);
                         }
                         None => {
@@ -173,9 +168,8 @@ pub async fn create_profile(
                         message: "Profile has been created successfully".to_string(),
                     }),
                 );
-            }
-            // if the profile is not created successfully
-            else {
+            } else {
+                // if the profile is not created successfully
                 return (
                     StatusCode::INTERNAL_SERVER_ERROR,
                     Json(ProfileResponse {
@@ -206,17 +200,13 @@ pub struct ProfileRequest {
 // _________________________________________________________
 pub async fn get_profile(
     State(db): State<Arc<Surreal<Client>>>,
-    Json(profile_request): Json<ProfileRequest>,
+    Json(profile_request): Json<ProfileRequest>
 ) -> (StatusCode, Json<Profile>) {
     // getting the profile model
     println!("{:?}", profile_request);
-    let profile = db
-        .query(
-            Profile::get_profile_by_user_id(profile_request.id)
-                .await
-                .unwrap(),
-        )
-        .await;
+    let profile = db.query(
+        Profile::get_profile_by_user_id(profile_request.id).await.unwrap()
+    ).await;
 
     // checking whether the profile is found or not
     match profile {
@@ -258,14 +248,16 @@ pub struct ProfileRequestUsername {
 // _________________________________________________________
 pub async fn get_user_profile(
     State(db): State<Arc<Surreal<Client>>>,
-    Json(user_profile): Json<ProfileRequestUsername>,
+    Json(user_profile): Json<ProfileRequestUsername>
 ) -> (StatusCode, Json<Value>) {
     // println!("{:?}",user_profile);
 
     // get the user from user model
-    let user =
-        User::get_user_by_email_or_username(db.clone(), user_profile.email, user_profile.username)
-            .await;
+    let user = User::get_user_by_email_or_username(
+        db.clone(),
+        user_profile.email,
+        user_profile.username
+    ).await;
 
     // println!("{:?}",user);
 
@@ -287,13 +279,9 @@ pub async fn get_user_profile(
     let usertype = user_fields.get_user_type().to_string();
 
     // getting the rest of the respective fields to a query
-    let usertype_table = db
-        .query(
-            get_by_user_id(Some(usertype.clone()), Some(userid.clone()))
-                .await
-                .unwrap(),
-        )
-        .await;
+    let usertype_table = db.query(
+        get_by_user_id(Some(usertype.clone()), Some(userid.clone())).await.unwrap()
+    ).await;
 
     let mut user_usertype = Value::Null;
     match usertype_table {
@@ -312,11 +300,11 @@ pub async fn get_user_profile(
                         println!("{:?}", e);
                     }
                 }
-            }
-            // if the user is an undergraduate
-            else {
-                let usertype_table: Result<Option<Undergraduate>, surrealdb::Error> =
-                    response.take(0);
+            } else {
+                // if the user is an undergraduate
+                let usertype_table: Result<Option<Undergraduate>, surrealdb::Error> = response.take(
+                    0
+                );
                 match usertype_table {
                     Ok(Some(usertype_table)) => {
                         // merging user array and profile array
@@ -334,7 +322,7 @@ pub async fn get_user_profile(
         Err(e) => {
             println!("{:?}", e);
         }
-    };
+    }
     println!("{:?}", user_usertype);
 
     // getting profile part of the user
@@ -343,9 +331,7 @@ pub async fn get_user_profile(
     // println!("{:?}",profile_id);
 
     // get the profile from profile model
-    let profile = db
-        .query(Profile::get_profile_by_user_id(profile_id).await.unwrap())
-        .await;
+    let profile = db.query(Profile::get_profile_by_user_id(profile_id).await.unwrap()).await;
 
     // get the profile json values
     // println!("{:?}",profile);
@@ -360,22 +346,10 @@ pub async fn get_user_profile(
                     let mut user_profile_result = merge(user_usertype, profile.into());
 
                     // remove unneccessary field
-                    user_profile_result
-                        .as_object_mut()
-                        .unwrap()
-                        .remove("password");
-                    user_profile_result
-                        .as_object_mut()
-                        .unwrap()
-                        .remove("invalid_login_attempts");
-                    user_profile_result
-                        .as_object_mut()
-                        .unwrap()
-                        .remove("email_verification_flag");
-                    user_profile_result
-                        .as_object_mut()
-                        .unwrap()
-                        .remove("locked_flag");
+                    user_profile_result.as_object_mut().unwrap().remove("password");
+                    user_profile_result.as_object_mut().unwrap().remove("invalid_login_attempts");
+                    user_profile_result.as_object_mut().unwrap().remove("email_verification_flag");
+                    user_profile_result.as_object_mut().unwrap().remove("locked_flag");
 
                     println!("{:?}", user_profile_result);
                     return (StatusCode::OK, Json(user_profile_result));
@@ -388,19 +362,13 @@ pub async fn get_user_profile(
                 }
                 Err(e) => {
                     println!("{:?}", e);
-                    return (
-                        StatusCode::INTERNAL_SERVER_ERROR,
-                        Json(Value::String(e.to_string())),
-                    );
+                    return (StatusCode::INTERNAL_SERVER_ERROR, Json(Value::String(e.to_string())));
                 }
             }
         }
         Err(e) => {
             println!("{:?}", e);
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(Value::String(e.to_string())),
-            );
+            return (StatusCode::INTERNAL_SERVER_ERROR, Json(Value::String(e.to_string())));
         }
     }
 }
@@ -410,7 +378,7 @@ pub async fn get_user_profile(
 pub async fn update_profile(
     claim: crate::models::user_claim::Claim,
     State(db): State<Arc<Surreal<Client>>>,
-    Json(profile_details): Json<OnlyProfile>,
+    Json(profile_details): Json<OnlyProfile>
 ) -> (StatusCode, Json<ProfileResponse>) {
     // getting the date of birth
     let dob = profile_details.date_of_birth.clone();
@@ -425,9 +393,7 @@ pub async fn update_profile(
     let profile_detail = profile_details.get_profile_model(Some(claim.get_user_id()));
 
     // generating a create query for profile
-    let response = db
-        .query(profile_detail.get_profile_update_query().await.unwrap())
-        .await;
+    let response = db.query(profile_detail.get_profile_update_query().await.unwrap()).await;
 
     println!("{:?}", response);
 
@@ -444,10 +410,8 @@ pub async fn update_profile(
                     println!("undergraduate");
                     match dob {
                         Some(dob) => {
-                            update_dob(claim.get_user_id(), db.clone(), Some(dob))
-                                .await
-                                .unwrap();
-                            println!("{:?}",response);
+                            update_dob(claim.get_user_id(), db.clone(), Some(dob)).await.unwrap();
+                            println!("{:?}", response);
                         }
                         None => {
                             println!("no dob");
@@ -457,10 +421,12 @@ pub async fn update_profile(
                     println!("company");
                     match address {
                         Some(address) => {
-                            update_address(claim.get_user_id(), db.clone(), Some(address))
-                                .await
-                                .unwrap();
-                            println!("{:?}",response);
+                            update_address(
+                                claim.get_user_id(),
+                                db.clone(),
+                                Some(address)
+                            ).await.unwrap();
+                            println!("{:?}", response);
                         }
                         None => {
                             println!("no address");
@@ -470,13 +436,15 @@ pub async fn update_profile(
 
                 match name {
                     Some(name) => {
-                        update_name(Some(claim.get_user_type()),claim.get_user_id(), db.clone(), Some(name))
-                            .await
-                            .unwrap();
+                        update_name(
+                            Some(claim.get_user_type()),
+                            claim.get_user_id(),
+                            db.clone(),
+                            Some(name)
+                        ).await.unwrap();
                     }
                     None => {}
                 }
-
 
                 return (
                     StatusCode::OK,
@@ -484,9 +452,8 @@ pub async fn update_profile(
                         message: "Profile has been updated successfully".to_string(),
                     }),
                 );
-            }
-            // if the profile is not updated successfully
-            else {
+            } else {
+                // if the profile is not updated successfully
                 return (
                     StatusCode::INTERNAL_SERVER_ERROR,
                     Json(ProfileResponse {

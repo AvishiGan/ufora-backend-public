@@ -42,12 +42,7 @@ impl Project {
         }
     }
 
-    pub async fn save(
-        &self,
-        db: Arc<Surreal<Client>>,
-        user: Option<Thing>
-    ) -> Result<(),String> {
-
+    pub async fn save(&self, db: Arc<Surreal<Client>>, user: Option<Thing>) -> Result<(), String> {
         match user.clone() {
             None => {
                 println!("Error: {:?}", "No user provided");
@@ -69,10 +64,10 @@ impl Project {
             .content(self).await;
 
         match response {
-            Ok(_) => {},
+            Ok(_) => {}
             Err(e) => {
                 println!("Error: {:?}", e);
-                return Err(format!("{:?}", e))
+                return Err(format!("{:?}", e));
             }
         }
 
@@ -95,7 +90,7 @@ impl Project {
         db: Arc<Surreal<Client>>,
         project_id: Thing,
         user_id: Thing
-    ) -> Result<(),String> {
+    ) -> Result<(), String> {
         let query = get_relate_query_with_content(
             user_id,
             project_id,
@@ -113,5 +108,4 @@ impl Project {
             Ok(_) => { Ok(()) }
         }
     }
-
 }
