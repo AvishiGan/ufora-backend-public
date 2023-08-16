@@ -41,7 +41,10 @@ pub async fn get_posts_for_profile(
     State(db): State<Arc<Surreal<Client>>>,
     claim: crate::models::user_claim::Claim,
 ) -> (StatusCode, Json<Vec<Post>>) {
-    let posts: Result<Vec<Post>,surrealdb::Error> = db.select("post").await;
+
+    let logged_user = claim.get_surrealdb_thing();
+
+    let posts = Post::get_post_by_user_id(db, logged_user).await;
 
     match posts {
         Ok(posts) => (StatusCode::OK, Json(posts)),

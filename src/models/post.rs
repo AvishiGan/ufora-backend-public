@@ -8,8 +8,10 @@ use crate::services::queryBuilder::{
     Return,
     DatabaseObject,
     get_create_query_for_an_object,
-    get_relate_query_with_content,
+    get_relate_query_with_content, get_select_query, Column,
 };
+
+use super::user;
 
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
 pub struct Post {
@@ -136,4 +138,32 @@ impl Post {
             Err(e) => Err(format!("{:?}", e.to_string())),
         }
     }
+
+    pub async fn get_post_by_user_id(
+        db: Arc<Surreal<Client>>,
+        user_id: Thing
+    ) -> Result<Vec<Self>,String> {
+
+        let query = get_select_query(Item::Record { tb: user_id.tb, id: user_id.id.to_string() }, Column::Specific(vec!["->create_post->post.* as posts".to_string()]), None, None, None, None, None);
+
+        let response = db.query(query).await;
+
+        #[derive(serde::Deserialize, Debug)]
+        struct Posts {
+            pub posts: Vec<Post>
+        }
+
+        match response {
+            Ok(mut response) => {
+                let posts: Result<Option<Posts>, surrealdb::Error> = response.take(0);
+                match posts {
+                    Ok(posts) => Ok(posts.unwrap().posts),
+                    Err(e) => Err(format!("{:?}", e.to_string())),
+                }
+            }
+            Err(e) => Err(format!("{:?}", e.to_string())),
+        }
+
+    }
+
 }
