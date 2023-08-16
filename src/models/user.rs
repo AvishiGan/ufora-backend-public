@@ -154,6 +154,10 @@ impl User {
         self.user_type.as_ref().unwrap().clone()
     }
 
+    pub fn get_id(&self) -> Thing {
+        self.id.as_ref().unwrap().clone()
+    }
+
     // returns user id
     pub fn get_user_id(&self) -> Thing {
         self.user_id.as_ref().unwrap().clone()

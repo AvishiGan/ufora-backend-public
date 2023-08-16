@@ -93,8 +93,8 @@ impl Project {
 
     async fn relate_user_with_project(
         db: Arc<Surreal<Client>>,
-        user_id: Thing,
-        project_id: Thing
+        project_id: Thing,
+        user_id: Thing
     ) -> Result<(),String> {
         let query = get_relate_query_with_content(
             user_id,

@@ -1,10 +1,9 @@
 use std::sync::Arc;
 
-use axum::{extract::{State, FromRequest}, Json, http::{Request, request, StatusCode}, body::Body, Extension, RequestExt};
-use lettre::transport::smtp::extension;
-use surrealdb::{Surreal, engine::remote::ws::Client, sql::Thing};
+use axum::{extract::State, Json, http::StatusCode};
+use surrealdb::{Surreal, engine::remote::ws::Client};
 
-use crate::models::{post::Post, user_claim::Claim};
+use crate::models::post::Post;
 
 #[derive(serde::Deserialize,Debug)]
 pub struct CreatePostRequest {

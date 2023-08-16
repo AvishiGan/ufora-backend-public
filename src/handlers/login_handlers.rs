@@ -72,7 +72,7 @@ pub async fn login_via_platform(
     }
 
     // create jwt token
-    let token = jwt::get_jwt(user.get_user_id().id.to_string(),user.get_user_type()).await.unwrap();
+    let token = jwt::get_jwt(user.get_id().id.to_string(),user.get_user_type()).await.unwrap();
 
     user.update_login_attempts(db.clone(),0).await;
 
