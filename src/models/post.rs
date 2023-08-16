@@ -82,7 +82,7 @@ impl Post {
                     "[]".to_string(),
                     "[]".to_string(),
                     "None".to_string(),
-                    self.time.clone()
+                    "'".to_string() + self.time.clone().as_ref() + "'"
                 ],
             },
             Return::Fields { fields: vec!["id".to_string()] }

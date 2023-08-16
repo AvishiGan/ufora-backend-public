@@ -36,3 +36,18 @@ pub async fn create_post(
         }
     }
 }
+
+pub async fn get_posts_for_profile(
+    State(db): State<Arc<Surreal<Client>>>,
+    claim: crate::models::user_claim::Claim,
+) -> (StatusCode, Json<Vec<Post>>) {
+    let posts: Result<Vec<Post>,surrealdb::Error> = db.select("post").await;
+
+    match posts {
+        Ok(posts) => (StatusCode::OK, Json(posts)),
+        Err(e) => {
+            println!("{:?}", e);
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(vec![]))
+        }
+    }
+}
