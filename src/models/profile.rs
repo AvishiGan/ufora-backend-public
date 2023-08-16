@@ -2,59 +2,37 @@ use crate::services::queryBuilder::{
     get_select_query, Column, Expression, ExpressionConnector, Item,
 };
 use axum::http::StatusCode;
-use chrono::{DateTime, NaiveDate, Utc};
 
-use dotenvy_macro::dotenv;
 use simple_collection_macros::bmap;
 use surrealdb::sql::{
-    statements::CreateStatement, Data, Datetime, Field, Fields, Ident, Idiom, Object, Output, Part,
+    statements::CreateStatement, Data, Field, Fields, Ident, Idiom, Object, Output, Part,
     Strand, Table, Thing, Value, Values,
 };
-
-fn generate_embed_link(address: Option<String>, api_key: &str) -> String {
-    format!(
-        "https://www.google.com/maps/embed/v1/place?key={}&q={}",
-        api_key,
-        address.unwrap()
-    )
-}
+ 
 
 #[derive(serde::Serialize, serde::Deserialize, Default, Debug)]
 pub struct Profile {
     id: Option<Thing>,
-    name: Option<String>,
     intro: Option<String>,
     profile_pic: Option<String>,
     contact: Option<String>,
     // optional params depending on user
-    date_of_birth: Option<String>,
-    address: Option<String>,
-
-    // mutable gmap
-    // gmap: Option<String>,
-    gmap: Option<String>,
+    
 }
 
 impl Profile {
     // returns a new profile model
     pub fn from(
         id: Option<Thing>,
-        name: Option<String>,
         intro: Option<String>,
         profile_pic: Option<String>,
-        date_of_birth: Option<String>,
-        address: Option<String>,
         contact: Option<String>,
     ) -> Self {
         Self {
             id,
-            name,
             intro,
             profile_pic,
-            date_of_birth,
-            address,
             contact,
-            gmap: None,
         }
     }
 
@@ -66,37 +44,36 @@ impl Profile {
             _ => {}
         }
 
-        let mut map = bmap! {
+        let map = bmap! {
             "id".to_string() => Value::Thing(self.id.unwrap()),
-            "name".to_string() => Value::Strand(Strand(self.name.unwrap())),
             "intro".to_string() => Value::Strand(Strand(self.intro.unwrap())),
             "profile_pic".to_string() => Value::Strand(Strand(self.profile_pic.unwrap())),
             "contact".to_string() => Value::Strand(Strand(self.contact.unwrap())),
         };
 
-        if let Some(date_of_birth) = self.date_of_birth.clone() {
-            map.insert(
-                "date_of_birth".to_string(),
-                Value::Datetime(Datetime(DateTime::<Utc>::from_utc(
-                    NaiveDate::parse_from_str(&date_of_birth, "%d-%m-%Y")
-                        .expect("Invalid date format")
-                        .and_hms_opt(0, 0, 0)
-                        .unwrap(),
-                    Utc,
-                ))),
-            );
-        } 
+        // if let Some(date_of_birth) = self.date_of_birth.clone() {
+        //     map.insert(
+        //         "date_of_birth".to_string(),
+        //         Value::Datetime(Datetime(DateTime::<Utc>::from_utc(
+        //             NaiveDate::parse_from_str(&date_of_birth, "%d-%m-%Y")
+        //                 .expect("Invalid date format")
+        //                 .and_hms_opt(0, 0, 0)
+        //                 .unwrap(),
+        //             Utc,
+        //         ))),
+        //     );
+        // } 
 
-        if let Some(address) = self.address.clone() {
-            let api_key = dotenv!("MAP_API_KEY");
-            let embed_link = generate_embed_link(Some(address.clone()), api_key).replace(" ", "%20");
+        // if let Some(address) = self.address.clone() {
+        //     let api_key = dotenv!("MAP_API_KEY");
+        //     let embed_link = generate_embed_link(Some(address.clone()), api_key).replace(" ", "%20");
          
-            // add address to profile
-            map.insert("address".to_string(), Value::Strand(Strand(address)));
+        //     // add address to profile
+        //     map.insert("address".to_string(), Value::Strand(Strand(address)));
 
-            // println!("Embed link: {}", embed_link);
-            map.insert("gmap".to_string(), Value::Strand(Strand(embed_link)));
-        }
+        //     // println!("Embed link: {}", embed_link);
+        //     map.insert("gmap".to_string(), Value::Strand(Strand(embed_link)));
+        // }
 
         Ok(CreateStatement {
             what: Values(vec![Value::Table(Table("profile".to_string()))]),
@@ -130,6 +107,67 @@ impl Profile {
         // println!("{:?}", profile);
         Ok(profile)
     }
+
+
+// pub async fn update_dob(
+//     user_id: String,
+//     db: Arc<Surreal<Client>>,
+//     date_of_birth: Option<String>,
+// ) -> Result<(), StatusCode> {
+//     match date_of_birth {
+//         None => return Err(StatusCode::BAD_REQUEST),
+//         _ => {}
+//     }
+
+//     let response: Result<String, surrealdb::Error> = db
+//         .update(("undergraduate", user_id))
+//         // parse dob as datetime
+//         // .patch(PatchOp::replace("/date_of_birth",date_of_birth.unwrap()))
+//         .patch(PatchOp::replace(
+//             "/date_of_birth",
+//             Datetime(DateTime::<Utc>::from_utc(
+//                 NaiveDate::parse_from_str(&date_of_birth.unwrap(), "%d-%m-%Y")
+//                     .expect("Invalid date format")
+//                     .and_hms_opt(0, 0, 0)
+//                     .unwrap(),
+//                 Utc,
+//             )),
+//         ))
+//         .await;
+
+//     match response {
+//         Ok(_) => Ok(()),
+//         Err(e) => {
+//             println!("{:?} ", e);
+//             Ok(())
+//         }
+//     }
+    pub async fn get_profile_update_query(self) -> Result<String,StatusCode>{
+        let mut query = String::new();
+        query.push_str("UPDATE profile SET ");
+        let mut count = 0;
+        if let Some(intro) = self.intro.clone() {
+            query.push_str(&format!("intro = '{}'",intro));
+            count += 1;
+        }
+        if let Some(profile_pic) = self.profile_pic.clone() {
+            if count > 0 {
+                query.push_str(",");
+            }
+            query.push_str(&format!("profile_pic = '{}'",profile_pic));
+            count += 1;
+        }
+        if let Some(contact) = self.contact.clone() {
+            if count > 0 {
+                query.push_str(",");
+            }
+            query.push_str(&format!("contact = '{}'",contact));
+            
+        }
+        query.push_str(&format!(" WHERE id = '{}'",self.id.unwrap()));
+        Ok(query)
+    }
+   
 }
 
 
@@ -137,13 +175,9 @@ impl Into<serde_json::Value> for Profile {
     fn into(self) -> serde_json::Value {
         serde_json::json!({
             "id": self.id,
-            "name": self.name,
             "intro": self.intro,
             "profile_pic": self.profile_pic,
             "contact": self.contact,
-            "date_of_birth": self.date_of_birth,
-            "address": self.address,
-            "gmap": self.gmap
         })
     }
 }

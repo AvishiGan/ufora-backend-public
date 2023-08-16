@@ -17,7 +17,7 @@ pub struct UndergraduateRegistrationRequest {
 
 impl UndergraduateRegistrationRequest {
     pub fn get_undergraduate_and_user_models(self) -> (Undergraduate,User) {
-        (Undergraduate::from(self.name),User::from(self.username,self.password,self.email))
+        (Undergraduate::from(self.name, None),User::from(self.username,self.password,self.email))
     }
 }
 
@@ -154,7 +154,7 @@ pub struct CompanyRegistrationRequest {
 
 impl CompanyRegistrationRequest {
     pub fn get_company_and_user_models(self) -> (Company,User) {
-        (Company::from(self.name),User::from(self.username,self.password,self.email))
+        (Company::from(self.name, None, None),User::from(self.username,self.password,self.email))
     }
 }
 

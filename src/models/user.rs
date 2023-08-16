@@ -1,15 +1,26 @@
-
 use std::{sync::Arc, vec};
 
-use axum::http::{StatusCode, response};
+use axum::http::{response, StatusCode};
 use simple_collection_macros::bmap;
-use surrealdb::{sql::{Thing, statements::{CreateStatement, SelectStatement, UpdateStatement}, Values, Value, Table, Data, Object, Strand, Output, Number, Fields, Limit, Cond, Expression, Part, Ident, Idiom, Field, Operator}, Surreal, engine::remote::ws::Client, opt::PatchOp};
-use surrealdb_extra::query_builder::{Query,filter::{RelationalOperator,LogicalOperator}};
+use surrealdb::{
+    engine::remote::ws::Client,
+    opt::PatchOp,
+    sql::{
+        statements::{CreateStatement, SelectStatement, UpdateStatement},
+        Cond, Data, Expression, Field, Fields, Ident, Idiom, Limit, Number, Object, Operator,
+        Output, Part, Strand, Table, Thing, Value, Values,
+    },
+    Surreal,
+};
+use surrealdb_extra::query_builder::{
+    filter::{LogicalOperator, RelationalOperator},
+    Query,
+};
 
 use crate::services::password;
 
 // model for user
-#[derive(serde::Serialize,serde::Deserialize,Default,Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Default, Debug)]
 pub struct User {
     id: Option<Thing>,
     username: Option<String>,
@@ -17,15 +28,14 @@ pub struct User {
     locked_flag: Option<bool>,
     user_type: Option<String>,
     user_id: Option<Thing>,
-    email:Option<String>,
+    email: Option<String>,
     email_verification_flag: Option<bool>,
     pub invalid_login_attempts: Option<i32>,
 }
 
 impl User {
-
     // returns a new user model
-    pub fn from(username: Option<String>, password: Option<String>,email:Option<String>) -> Self {
+    pub fn from(username: Option<String>, password: Option<String>, email: Option<String>) -> Self {
         Self {
             id: None,
             username,
@@ -39,18 +49,19 @@ impl User {
     pub async fn get_create_user_query(
         self,
         user_type: String,
-        user_id: Option<Thing>
-    ) -> Result<CreateStatement,StatusCode> {
-
-        match (self.username.clone(),self.password.clone(),user_id.clone()) {
-            (None,_,_) | (_, None,_) | (_,_,None) => Err(StatusCode::BAD_REQUEST) ?,
-            (_,_,_) => {}
+        user_id: Option<Thing>,
+    ) -> Result<CreateStatement, StatusCode> {
+        match (
+            self.username.clone(),
+            self.password.clone(),
+            user_id.clone(),
+        ) {
+            (None, _, _) | (_, None, _) | (_, _, None) => Err(StatusCode::BAD_REQUEST)?,
+            (_, _, _) => {}
         }
 
         Ok(CreateStatement {
-            what: Values(
-                vec![Value::Table(Table("user".to_string()))]
-            ),
+            what: Values(vec![Value::Table(Table("user".to_string()))]),
             data: Some(Data::ContentExpression(Value::Object(Object(bmap!(
                 "username".to_string() => Value::Strand(Strand(self.username.unwrap())),
                 "password".to_string() => Value::Strand(Strand(password::hash_password(self.password.unwrap())?)),
@@ -63,51 +74,43 @@ impl User {
             ))))),
             output: Some(Output::Null),
             timeout: None,
-            parallel: false
+            parallel: false,
         })
-
     }
-    
+
     // returns the user from the database
     pub async fn retrieve_user_from_database_by_username(
-        db:Arc<Surreal<Client>>,
-        username: String
-    ) -> Result<Self,StatusCode> {
-
-        let mut response = db.query(SelectStatement {
-            expr: Fields (
-                vec![Field::All],
-                true
-            ),
-            what: Values(
-                vec![Value::Table(Table("user".to_string()))]
-            ),
-            cond:Some(Cond(
-                Value::Expression(Box::from(Expression {
+        db: Arc<Surreal<Client>>,
+        username: String,
+    ) -> Result<Self, StatusCode> {
+        let mut response = db
+            .query(SelectStatement {
+                expr: Fields(vec![Field::All], true),
+                what: Values(vec![Value::Table(Table("user".to_string()))]),
+                cond: Some(Cond(Value::Expression(Box::from(Expression {
                     l: Value::Idiom(Idiom(vec![Part::Field(Ident("username".to_string()))])),
                     o: surrealdb::sql::Operator::Equal,
-                    r: Value::Strand(Strand(username))
-                })))
-            ),
-            group: None,
-            order: None,
-            limit: Some(Limit(Value::Number(Number::Int(1)))),
-            start: None,
-            fetch: None,
-            version: None,
-            split:None,
-            timeout:None,
-            parallel:false
-
-        }).await.unwrap();
+                    r: Value::Strand(Strand(username)),
+                })))),
+                group: None,
+                order: None,
+                limit: Some(Limit(Value::Number(Number::Int(1)))),
+                start: None,
+                fetch: None,
+                version: None,
+                split: None,
+                timeout: None,
+                parallel: false,
+            })
+            .await
+            .unwrap();
 
         let users: Option<Self> = response.take(0).unwrap();
 
         match users {
             Some(user) => Ok(user),
-            None => Err(StatusCode::NOT_FOUND)
+            None => Err(StatusCode::NOT_FOUND),
         }
-
     }
 
     // gets the stored password
@@ -118,30 +121,32 @@ impl User {
     // updates the invalid login attempts and locked account
     pub async fn update_login_attempts(
         self,
-        db:Arc<Surreal<Client>>,
-        new_invalid_login_attempts: i32
+        db: Arc<Surreal<Client>>,
+        new_invalid_login_attempts: i32,
     ) -> () {
-
         #[derive(serde::Deserialize)]
         struct LoginAttemptUpdateResult {}
 
-        let _response: Option<LoginAttemptUpdateResult> = match new_invalid_login_attempts  {
-            0..=4 => {
-                db.update(("user",self.id.unwrap().id))
-                    .patch(PatchOp::replace("/invalid_login_attempts",new_invalid_login_attempts))
-                    .await.unwrap_or(None)
-            },
-            5 => {
-                db.update(("user",self.id.unwrap().id))
-                    .patch(PatchOp::replace("/invalid_login_attempts",new_invalid_login_attempts))
-                    .patch(PatchOp::replace("/locked_flag",true))
-                    .await.unwrap_or(None)
-            }
-            _ => {
-                None
-            }
+        let _response: Option<LoginAttemptUpdateResult> = match new_invalid_login_attempts {
+            0..=4 => db
+                .update(("user", self.id.unwrap().id))
+                .patch(PatchOp::replace(
+                    "/invalid_login_attempts",
+                    new_invalid_login_attempts,
+                ))
+                .await
+                .unwrap_or(None),
+            5 => db
+                .update(("user", self.id.unwrap().id))
+                .patch(PatchOp::replace(
+                    "/invalid_login_attempts",
+                    new_invalid_login_attempts,
+                ))
+                .patch(PatchOp::replace("/locked_flag", true))
+                .await
+                .unwrap_or(None),
+            _ => None,
         };
-        
     }
 
     // returns whether the user is locked or not
@@ -165,131 +170,139 @@ impl User {
 
     // returns whether the user is verified or not
     pub async fn update_email_verification(
-        db:Arc<Surreal<Client>>,
-        email: String
-    ) -> Result<(),StatusCode> {
-
-        let _response = db.query(
-            UpdateStatement {
-                what: Values(
-                    vec![Value::Table(Table("user".to_string()))]
-                ),
-                data: Some(Data::SetExpression(
-                    vec![
-                        (
-                            Idiom(vec![Part::Field(Ident("email_verification_flag".to_string()))]),
-                            Operator::Equal,
-                            Value::True
-                        )
-                    ]
-                )),
-                cond: Some(Cond(
-                    Value::Expression(Box::from(Expression {
-                        l: Value::Idiom(Idiom(vec![Part::Field(Ident("email".to_string()))])),
-                        o: surrealdb::sql::Operator::Equal,
-                        r: Value::Strand(Strand(email))
-                    })))
-                ),
+        db: Arc<Surreal<Client>>,
+        email: String,
+    ) -> Result<(), StatusCode> {
+        let _response = db
+            .query(UpdateStatement {
+                what: Values(vec![Value::Table(Table("user".to_string()))]),
+                data: Some(Data::SetExpression(vec![(
+                    Idiom(vec![Part::Field(Ident(
+                        "email_verification_flag".to_string(),
+                    ))]),
+                    Operator::Equal,
+                    Value::True,
+                )])),
+                cond: Some(Cond(Value::Expression(Box::from(Expression {
+                    l: Value::Idiom(Idiom(vec![Part::Field(Ident("email".to_string()))])),
+                    o: surrealdb::sql::Operator::Equal,
+                    r: Value::Strand(Strand(email)),
+                })))),
                 output: None,
                 timeout: None,
-                parallel: false
-            }
-        ).await;
+                parallel: false,
+            })
+            .await;
 
         Ok(())
     }
 
     // returns user by email
     pub async fn get_user_by_email(
-        db:Arc<Surreal<Client>>,
-        email: String
-    ) -> Result<Self,StatusCode> {
-
-        let mut response = db.query(SelectStatement {
-            expr: Fields (
-                vec![Field::All],
-                true
-            ),
-            what: Values(
-                vec![Value::Table(Table("user".to_string()))]
-            ),
-            cond:Some(Cond(
-                Value::Expression(Box::from(Expression {
+        db: Arc<Surreal<Client>>,
+        email: String,
+    ) -> Result<Self, StatusCode> {
+        let mut response = db
+            .query(SelectStatement {
+                expr: Fields(vec![Field::All], true),
+                what: Values(vec![Value::Table(Table("user".to_string()))]),
+                cond: Some(Cond(Value::Expression(Box::from(Expression {
                     l: Value::Idiom(Idiom(vec![Part::Field(Ident("email".to_string()))])),
                     o: surrealdb::sql::Operator::Equal,
-                    r: Value::Strand(Strand(email))
-                })))
-            ),
-            group: None,
-            order: None,
-            limit: Some(Limit(Value::Number(Number::Int(1)))),
-            start: None,
-            fetch: None,
-            version: None,
-            split:None,
-            timeout:None,
-            parallel:false
-
-        }).await.unwrap();
+                    r: Value::Strand(Strand(email)),
+                })))),
+                group: None,
+                order: None,
+                limit: Some(Limit(Value::Number(Number::Int(1)))),
+                start: None,
+                fetch: None,
+                version: None,
+                split: None,
+                timeout: None,
+                parallel: false,
+            })
+            .await
+            .unwrap();
 
         let users: Option<Self> = response.take(0).unwrap();
 
         match users {
             Some(user) => Ok(user),
-            None => Err(StatusCode::NOT_FOUND)
+            None => Err(StatusCode::NOT_FOUND),
         }
-
     }
 
     pub fn get_user_email(&self) -> String {
         match self.email.clone() {
             Some(email) => email,
-            None => "".to_string()
+            None => "".to_string(),
         }
     }
 
     pub fn get_user_username(&self) -> String {
         match self.username.clone() {
             Some(username) => username,
-            None => "".to_string()
+            None => "".to_string(),
         }
     }
 
     pub async fn get_user_by_email_or_username(
-        db:Arc<Surreal<Client>>,
+        db: Arc<Surreal<Client>>,
         email: Option<String>,
-        username: Option<String>
-    ) -> Result<Self,StatusCode> {
-
-        match (email.clone(),username.clone()) {
-            (None,None) => return Err(StatusCode::BAD_REQUEST),
-            (_,_) => {}
+        username: Option<String>,
+    ) -> Result<Self, StatusCode> {
+        match (email.clone(), username.clone()) {
+            (None, None) => return Err(StatusCode::BAD_REQUEST),
+            (_, _) => {}
         }
 
-        let response = Query::new().from("user",None).limit(1)
-            .field("username").field("email").field("password").field("user_id").field("user_type").field("locked_flag").field("invalid_login_attempts").field("id")
+        let response = Query::new()
+            .from("user", None)
+            .limit(1)
+            .field("username")
+            .field("email")
+            .field("password")
+            .field("user_id")
+            .field("user_type")
+            .field("locked_flag")
+            .field("invalid_login_attempts")
+            .field("id")
             .where_filter()
-            .filter(("username",RelationalOperator::Equal,username.unwrap_or("".to_string()),LogicalOperator::Or)).unwrap_right()
-            .filter(("email",RelationalOperator::Equal,email.unwrap_or("".to_string()),LogicalOperator::End)).unwrap_left()
-            .execute(&db).await;
+            .filter((
+                "username",
+                RelationalOperator::Equal,
+                username.unwrap_or("".to_string()),
+                LogicalOperator::Or,
+            ))
+            .unwrap_right()
+            .filter((
+                "email",
+                RelationalOperator::Equal,
+                email.unwrap_or("".to_string()),
+                LogicalOperator::End,
+            ))
+            .unwrap_left()
+            .execute(&db)
+            .await;
 
         match response {
             Err(_) => return Err(StatusCode::INTERNAL_SERVER_ERROR),
             Ok(_) => {}
         }
-            
+
         let mut response = response.unwrap();
 
         let user: Option<Self> = response.take(0).unwrap();
 
         match user {
             Some(user) => Ok(user),
-            None => Err(StatusCode::NOT_FOUND)
+            None => Err(StatusCode::NOT_FOUND),
         }
-    } 
+    }
+
+
 
 }
-
 
 impl Into<serde_json::Value> for User {
     fn into(self) -> serde_json::Value {
