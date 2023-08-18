@@ -1,3 +1,3 @@
 # ufora-backend
 
-testing ci/cd
+testing ci/cd with jenkins
