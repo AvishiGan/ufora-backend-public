@@ -7,23 +7,23 @@ use crate::services::query_builder::get_relate_query_with_content;
 #[derive(serde::Deserialize, serde::Serialize, Debug, Clone)]
 pub struct Project {
     id: Option<Thing>,
-    title: Option<String>,
-    content: Option<ProjectContent>,
+    title: String,
+    content: ProjectContent,
 }
 
 #[derive(serde::Deserialize, serde::Serialize, Debug, Clone)]
 pub struct ProjectContent {
-    pub time: Option<String>,
-    pub blocks: Option<Vec<ProjectBlock>>,
-    pub version: Option<String>,
+    pub time: String,
+    pub blocks: Vec<ProjectBlock>,
+    pub version: String,
 }
 
 #[derive(serde::Deserialize, serde::Serialize, Debug, Clone)]
 pub struct ProjectBlock {
-    pub id: Option<String>,
+    pub id: String,
     #[serde(rename = "type")]
-    pub block_type: Option<String>,
-    pub data: Option<ProjectBlockData>,
+    pub block_type: String,
+    pub data: ProjectBlockData,
 }
 
 #[derive(serde::Deserialize, serde::Serialize, Debug, Clone)]
@@ -39,11 +39,11 @@ pub struct ProjectBlockData {
 }
 
 impl Project {
-    pub fn new(project_title: Option<String>, project_content: ProjectContent) -> Self {
+    pub fn new(project_title: String, project_content: ProjectContent) -> Self {
         Self {
             id: None,
             title: project_title,
-            content: Some(project_content),
+            content: project_content,
         }
     }
 
@@ -52,14 +52,6 @@ impl Project {
             None => {
                 println!("Error: {:?}", "No user provided");
                 return Err(format!("{:?}", "User details cannot be found"));
-            }
-            Some(_) => {}
-        }
-
-        match self.title.clone() {
-            None => {
-                println!("Error: {:?}", "No title provided");
-                return Err(format!("{:?}", "No title provided"));
             }
             Some(_) => {}
         }
