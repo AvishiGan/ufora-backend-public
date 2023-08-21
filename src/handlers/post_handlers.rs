@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use axum::{ extract::State, Json, http::StatusCode };
+use axum::{ extract::{State, Path}, Json, http::StatusCode };
 use surrealdb::{ Surreal, engine::remote::ws::Client };
 
 use crate::models::post::Post;
@@ -51,6 +51,26 @@ pub async fn get_posts_for_profile(
         Err(e) => {
             println!("{:?}", e);
             (StatusCode::INTERNAL_SERVER_ERROR, Json(vec![]))
+        }
+    }
+}
+
+pub async fn delete_post_by_id(
+    State(db): State<Arc<Surreal<Client>>>,
+    Path(post_id): Path<String>,
+) -> (StatusCode, Json<CreatePostResponse>) {
+
+    let post = Post::delete_post_by_id(db, post_id).await;
+
+    match post {
+        Ok(_) =>
+            (
+                StatusCode::OK,
+                Json(CreatePostResponse { message: "Post deleted successfully".to_string() }),
+            ),
+        Err(e) => {
+            println!("{:?}", e);
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(CreatePostResponse { message: e }))
         }
     }
 }

@@ -1,17 +1,12 @@
-use std::{ sync::Arc, fmt::format };
+use std::sync::Arc;
 
-use surrealdb::{ Surreal, engine::remote::ws::Client, sql::Thing };
 use chrono::prelude::*;
+use surrealdb::{engine::remote::ws::Client, opt::PatchOp, sql::Thing, Surreal};
 
 use crate::services::query_builder::{
-    Item,
-    Return,
-    DatabaseObject,
-    get_create_query_for_an_object,
-    get_relate_query_with_content, get_select_query, Column,
+    get_create_query_for_an_object, get_delete_query_for_specific_record,
+    get_relate_query_with_content, get_select_query, Column, DatabaseObject, Item, Return,
 };
-
-use super::user;
 
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
 pub struct Post {
@@ -21,7 +16,6 @@ pub struct Post {
     content: Option<String>,
     reactions: Vec<Thing>,
     comments: Vec<Comment>,
-    delete: Option<String>,
     time: String,
 }
 
@@ -38,7 +32,7 @@ impl Post {
     pub fn new(
         caption: Option<String>,
         access_level: Option<String>,
-        content: Option<String>
+        content: Option<String>,
     ) -> Self {
         Self {
             id: None,
@@ -47,7 +41,6 @@ impl Post {
             content,
             reactions: vec![],
             comments: vec![],
-            delete: None,
             time: chrono::Utc
                 .from_local_datetime(&chrono::Local::now().naive_local())
                 .single()
@@ -58,7 +51,11 @@ impl Post {
     }
 
     pub async fn save(&self, db: Arc<Surreal<Client>>, user_id: Thing) -> Result<(), String> {
-        match (self.caption.clone(), self.access_level.clone(), self.content.clone()) {
+        match (
+            self.caption.clone(),
+            self.access_level.clone(),
+            self.content.clone(),
+        ) {
             (None, _, _) | (_, None, _) | (_, _, None) => {
                 return Err("caption, access_level and content are required".to_string());
             }
@@ -75,7 +72,7 @@ impl Post {
                     "reactions".to_string(),
                     "comments".to_string(),
                     "delete".to_string(),
-                    "time".to_string()
+                    "time".to_string(),
                 ],
                 values: vec![
                     "'".to_string() + &self.caption.clone().unwrap() + "'",
@@ -84,10 +81,12 @@ impl Post {
                     "[]".to_string(),
                     "[]".to_string(),
                     "None".to_string(),
-                    "'".to_string() + self.time.clone().as_ref() + "'"
+                    "'".to_string() + self.time.clone().as_ref() + "'",
                 ],
             },
-            Return::Fields { fields: vec!["id".to_string()] }
+            Return::Fields {
+                fields: vec!["id".to_string()],
+            },
         );
 
         let response = db.query(post_create_query).await;
@@ -122,14 +121,10 @@ impl Post {
         &self,
         db: Arc<Surreal<Client>>,
         user_id: Thing,
-        post_id: Thing
+        post_id: Thing,
     ) -> Result<(), String> {
-        let relate_query = get_relate_query_with_content(
-            user_id,
-            post_id,
-            "create_post".to_string(),
-            None
-        );
+        let relate_query =
+            get_relate_query_with_content(user_id, post_id, "create_post".to_string(), None);
 
         let response = db.query(relate_query).await;
 
@@ -141,16 +136,26 @@ impl Post {
 
     pub async fn get_post_by_user_id(
         db: Arc<Surreal<Client>>,
-        user_id: Thing
-    ) -> Result<Vec<Self>,String> {
-
-        let query = get_select_query(Item::Record { tb: user_id.tb, id: user_id.id.to_string() }, Column::Specific(vec!["->create_post->post.* as posts".to_string()]), None, None, None, None, None);
+        user_id: Thing,
+    ) -> Result<Vec<Self>, String> {
+        let query = get_select_query(
+            Item::Record {
+                tb: user_id.tb,
+                id: user_id.id.to_string(),
+            },
+            Column::Specific(vec!["->create_post->post.* as posts".to_string()]),
+            None,
+            None,
+            None,
+            None,
+            None,
+        );
 
         let response = db.query(query).await;
 
         #[derive(serde::Deserialize, Debug)]
         struct Posts {
-            pub posts: Vec<Post>
+            pub posts: Vec<Post>,
         }
 
         match response {
@@ -163,7 +168,26 @@ impl Post {
             }
             Err(e) => Err(format!("{:?}", e.to_string())),
         }
-
     }
 
+    pub async fn delete_post_by_id(
+        db: Arc<Surreal<Client>>,
+        post_id: String,
+    ) -> Result<(), String> {
+        let delete_query = get_delete_query_for_specific_record("post".to_string(), post_id);
+
+        let response = db.query(delete_query).await;
+
+        match response {
+            Ok(mut response) => {
+                let post: Result<Vec<Post>, surrealdb::Error> = response.take(0);
+                if post.unwrap().len() == 0 {
+                    return Err("Post not found".to_string());
+                } else {
+                    Ok(())
+                }
+            }
+            Err(e) => Err(format!("{:?}", e.to_string())),
+        }
+    }
 }
