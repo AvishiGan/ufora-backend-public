@@ -1,32 +1,33 @@
 use std::sync::Arc;
 
 use surrealdb::{engine::remote::ws::Client, sql::Thing, Surreal};
+use validator::Validate;
 
 use crate::services::query_builder::get_relate_query_with_content;
 
 #[derive(serde::Deserialize, serde::Serialize, Debug, Clone)]
 pub struct Blog {
     id: Option<Thing>,
-    title: Option<String>,
-    content: Option<BlogContent>,
+    title: String,
+    content: BlogContent,
 }
 
 #[derive(serde::Deserialize, serde::Serialize, Debug, Clone)]
 pub struct BlogContent {
-    pub time: Option<String>,
-    pub blocks: Option<Vec<BlogBlock>>,
-    pub version: Option<String>,
+    pub time: String,
+    pub blocks: Vec<BlogBlock>,
+    pub version: String,
 }
 
 #[derive(serde::Deserialize, serde::Serialize, Debug, Clone)]
 pub struct BlogBlock {
-    pub id: Option<String>,
+    pub id: String,
     #[serde(rename = "type")]
-    pub block_type: Option<String>,
-    pub data: Option<BlogBlockData>,
+    pub block_type: String,
+    pub data: BlogBlockData,
 }
 
-#[derive(serde::Deserialize, serde::Serialize, Debug, Clone)]
+#[derive(serde::Deserialize, serde::Serialize, Debug, Clone, Validate)]
 pub struct BlogBlockData {
     #[serde(skip_serializing_if = "Option::is_none")]
     text: Option<String>,
@@ -39,11 +40,11 @@ pub struct BlogBlockData {
 }
 
 impl Blog {
-    pub fn new(blog_title: Option<String>, blog_content: BlogContent) -> Self {
+    pub fn new(blog_title: String, blog_content: BlogContent) -> Self {
         Self {
             id: None,
             title: blog_title,
-            content: Some(blog_content),
+            content: blog_content,
         }
     }
 
@@ -52,14 +53,6 @@ impl Blog {
             None => {
                 println!("Error: {:?}", "No user provided");
                 return Err(format!("{:?}", "User details cannot be found"));
-            }
-            Some(_) => {}
-        }
-
-        match self.title.clone() {
-            None => {
-                println!("Error: {:?}", "No title provided");
-                return Err(format!("{:?}", "No title provided"));
             }
             Some(_) => {}
         }
