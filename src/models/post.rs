@@ -3,7 +3,7 @@ use std::{ sync::Arc, fmt::format };
 use surrealdb::{ Surreal, engine::remote::ws::Client, sql::Thing };
 use chrono::prelude::*;
 
-use crate::services::queryBuilder::{
+use crate::services::query_builder::{
     Item,
     Return,
     DatabaseObject,

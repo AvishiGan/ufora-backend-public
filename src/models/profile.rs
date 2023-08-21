@@ -1,4 +1,4 @@
-use crate::services::queryBuilder::{
+use crate::services::query_builder::{
     get_select_query,
     Column,
     Expression,

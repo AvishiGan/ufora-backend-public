@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use surrealdb::{ sql::Thing, Surreal, engine::remote::ws::Client };
 
-use crate::services::queryBuilder::get_relate_query_with_content;
+use crate::services::query_builder::get_relate_query_with_content;
 
 #[derive(serde::Deserialize, serde::Serialize, Debug, Clone)]
 pub struct Blog {

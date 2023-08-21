@@ -13,7 +13,7 @@ use crate::{models::{undergraduate::Undergraduate,user::User}, handlers::test_ha
 
 use crate::services::{otp::get_an_otp,email::send_email};
 
-use crate::services::queryBuilder::{Column,OrderBy,Item,Expression,ExpressionConnector,Group,DatabaseObject,Return,get_select_query, get_insert_query_by_fields,get_insert_query_for_an_object, get_insert_query_for_an_array_of_objects,get_delete_query_for_specific_record,
+use crate::services::query_builder::{Column,OrderBy,Item,Expression,ExpressionConnector,Group,DatabaseObject,Return,get_select_query, get_insert_query_by_fields,get_insert_query_for_an_object, get_insert_query_for_an_array_of_objects,get_delete_query_for_specific_record,
 get_delete_query_with_conditions, get_create_query_for_an_object};
 
 pub fn get_test_router() -> Router<Arc<Surreal<Client>>> {

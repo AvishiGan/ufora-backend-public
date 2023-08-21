@@ -13,7 +13,7 @@ use crate::{
         undergraduate::{ update_dob, Undergraduate },
         user::User,
     },
-    services::queryBuilder::{ get_select_query, Column, Expression, ExpressionConnector, Item },
+    services::query_builder::{ get_select_query, Column, Expression, ExpressionConnector, Item },
 };
 
 use crate::services::merge_json::merge;
