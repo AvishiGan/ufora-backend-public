@@ -388,6 +388,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "axum-valid"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "65ce483bae2be6a0a0398235f3f173dcc3a4af9cf2d941d8b8871673eeb06517"
+dependencies = [
+ "axum",
+ "validator",
+]
+
+[[package]]
 name = "backtrace"
 version = "0.3.68"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3778,6 +3788,7 @@ dependencies = [
  "async-trait",
  "axum",
  "axum-auth",
+ "axum-valid",
  "bcrypt 0.15.0",
  "cargo-watch",
  "chrono",
@@ -3799,6 +3810,7 @@ dependencies = [
  "tower-cookies",
  "tower-http",
  "uuid",
+ "validator",
 ]
 
 [[package]]
@@ -3877,6 +3889,21 @@ dependencies = [
  "getrandom",
  "serde",
  "wasm-bindgen",
+]
+
+[[package]]
+name = "validator"
+version = "0.16.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b92f40481c04ff1f4f61f304d61793c7b56ff76ac1469f1beb199b1445b253bd"
+dependencies = [
+ "idna 0.4.0",
+ "lazy_static",
+ "regex",
+ "serde",
+ "serde_derive",
+ "serde_json",
+ "url",
 ]
 
 [[package]]

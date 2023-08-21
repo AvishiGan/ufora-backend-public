@@ -3,12 +3,12 @@ use std::sync::Arc;
 use axum::{ extract::{State, Path}, Json, http::StatusCode };
 use surrealdb::{ Surreal, engine::remote::ws::Client };
 
-use crate::models::post::Post;
+use crate::models::post::{Post, AccessLevel};
 
 #[derive(serde::Deserialize, Debug)]
 pub struct CreatePostRequest {
     caption: Option<String>,
-    access_level: Option<String>,
+    access_level: Option<AccessLevel>,
     content: Option<String>,
 }
 

@@ -1,7 +1,8 @@
-use std::sync::Arc;
+use core::fmt;
+use std::{sync::Arc, str::FromStr};
 
 use chrono::prelude::*;
-use surrealdb::{engine::remote::ws::Client, opt::PatchOp, sql::Thing, Surreal};
+use surrealdb::{engine::remote::ws::Client, sql::Thing, Surreal};
 
 use crate::services::query_builder::{
     get_create_query_for_an_object, get_delete_query_for_specific_record,
@@ -12,11 +13,41 @@ use crate::services::query_builder::{
 pub struct Post {
     id: Option<Thing>,
     caption: Option<String>,
-    access_level: Option<String>,
+    access_level: Option<AccessLevel>,
     content: Option<String>,
     reactions: Vec<Thing>,
     comments: Vec<Comment>,
     time: String,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
+pub enum AccessLevel {
+    Public,
+    Friends,
+    OnlyMe
+}
+
+impl FromStr for AccessLevel {
+    type Err = ();
+
+    fn from_str(input: &str) -> Result<AccessLevel, Self::Err> {
+        match input {
+            "public" => Ok(AccessLevel::Public),
+            "friends" => Ok(AccessLevel::Friends),
+            "only me" => Ok(AccessLevel::OnlyMe),
+            _ => Err(()),
+        }
+    }
+}
+
+impl fmt::Display for AccessLevel {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            AccessLevel::Public => write!(f, "public"),
+            AccessLevel::Friends => write!(f, "friends"),
+            AccessLevel::OnlyMe => write!(f, "only me"),
+        }
+    }
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
@@ -31,7 +62,7 @@ struct Comment {
 impl Post {
     pub fn new(
         caption: Option<String>,
-        access_level: Option<String>,
+        access_level: Option<AccessLevel>,
         content: Option<String>,
     ) -> Self {
         Self {
@@ -76,7 +107,7 @@ impl Post {
                 ],
                 values: vec![
                     "'".to_string() + &self.caption.clone().unwrap() + "'",
-                    "'".to_string() + &self.access_level.clone().unwrap() + "'",
+                    "'".to_string() + &self.access_level.clone().unwrap().to_string() + "'",
                     "'".to_string() + &self.content.clone().unwrap() + "'",
                     "[]".to_string(),
                     "[]".to_string(),
