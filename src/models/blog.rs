@@ -3,7 +3,9 @@ use std::sync::Arc;
 use surrealdb::{engine::remote::ws::Client, sql::Thing, Surreal};
 use validator::Validate;
 
-use crate::services::query_builder::get_relate_query_with_content;
+use crate::services::query_builder::{
+    get_relate_query_with_content, get_select_query, Column, Item,
+};
 
 #[derive(serde::Deserialize, serde::Serialize, Debug, Clone)]
 pub struct Blog {
@@ -99,6 +101,49 @@ impl Blog {
                 Err(format!("{:?}", e))
             }
             Ok(_) => Ok(()),
+        }
+    }
+
+    pub async fn get_blogs_by_user_id(
+        db: Arc<Surreal<Client>>,
+        user_id: Thing,
+    ) -> Result<Vec<Self>, String> {
+        let query = get_select_query(
+            Item::Record {
+                tb: user_id.tb,
+                id: user_id.id.to_string(),
+            },
+            Column::Specific(vec!["->create_blog->blog.* as blogs".to_string()]),
+            None,
+            None,
+            None,
+            None,
+            None,
+        );
+
+        let response = db.query(query).await;
+
+        #[derive(serde::Deserialize, serde::Serialize, Debug)]
+        struct Blogs {
+            blogs: Vec<Blog>,
+        }
+
+        match response {
+            Ok(mut response) => {
+                let blogs: Result<Option<Blogs>, surrealdb::Error> = response.take(0);
+                match blogs {
+                    Ok(Some(blogs)) => Ok(blogs.blogs),
+                    Ok(None) => {
+                        return Err("No blogs found".to_string());
+                    }
+                    Err(e) => {
+                        return Err(format!("{:?}", e.to_string()));
+                    }
+                }
+            }
+            Err(e) => {
+                return Err(format!("{:?}", e.to_string()));
+            }
         }
     }
 }

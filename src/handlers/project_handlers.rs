@@ -83,3 +83,18 @@ pub async fn create_a_project(
         }
     }
 }
+
+pub async fn get_projects_of_the_user_by_user_id(
+    State(db): State<Arc<Surreal<Client>>>,
+    claim: crate::models::user_claim::Claim,
+) -> (StatusCode, Json<Vec<project::Project>>) {
+    let projects = project::Project::get_projects_by_user_id(db, claim.get_surrealdb_thing()).await;
+
+    match projects {
+        Ok(projects) => (StatusCode::OK, Json(projects)),
+        Err(e) => {
+            println!("Error: {}", e);
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(vec![]))
+        }
+    }
+}

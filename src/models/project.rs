@@ -2,7 +2,9 @@ use std::sync::Arc;
 
 use surrealdb::{engine::remote::ws::Client, sql::Thing, Surreal};
 
-use crate::services::query_builder::get_relate_query_with_content;
+use crate::services::query_builder::{
+    get_relate_query_with_content, get_select_query, Column, Item,
+};
 
 #[derive(serde::Deserialize, serde::Serialize, Debug, Clone)]
 pub struct Project {
@@ -98,6 +100,49 @@ impl Project {
                 Err(format!("{:?}", e))
             }
             Ok(_) => Ok(()),
+        }
+    }
+
+    pub async fn get_projects_by_user_id(
+        db: Arc<Surreal<Client>>,
+        user_id: Thing,
+    ) -> Result<Vec<Self>, String> {
+        let query = get_select_query(
+            Item::Record {
+                tb: user_id.tb,
+                id: user_id.id.to_string(),
+            },
+            Column::Specific(vec!["->create_project->project.* as projects".to_string()]),
+            None,
+            None,
+            None,
+            None,
+            None,
+        );
+
+        let response = db.query(query).await;
+
+        #[derive(serde::Deserialize, serde::Serialize, Debug)]
+        struct Projects {
+            projects: Vec<Project>,
+        }
+
+        match response {
+            Ok(mut response) => {
+                let projects: Result<Option<Projects>, surrealdb::Error> = response.take(0);
+
+                match projects {
+                    Ok(projects) => Ok(projects.unwrap().projects),
+                    Err(e) => {
+                        println!("Error: {:?}", e);
+                        Err(format!("{:?}", e))
+                    }
+                }
+            }
+            Err(e) => {
+                println!("Error: {:?}", e);
+                Err(format!("{:?}", e))
+            }
         }
     }
 }

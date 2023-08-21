@@ -64,3 +64,18 @@ pub async fn create_a_blog(
         }
     }
 }
+
+pub async fn get_blogs_of_the_user_by_user_id(
+    State(db): State<Arc<Surreal<Client>>>,
+    claim: crate::models::user_claim::Claim,
+) -> (StatusCode, Json<Vec<blog::Blog>>) {
+    let blogs = blog::Blog::get_blogs_by_user_id(db, claim.get_surrealdb_thing()).await;
+
+    match blogs {
+        Ok(blogs) => (StatusCode::OK, Json(blogs)),
+        Err(e) => {
+            println!("Error: {}", e);
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(vec![]))
+        }
+    }
+}
