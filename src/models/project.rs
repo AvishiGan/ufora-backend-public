@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use surrealdb::{ sql::Thing, Surreal, engine::remote::ws::Client };
+use surrealdb::{engine::remote::ws::Client, sql::Thing, Surreal};
 
 use crate::services::query_builder::get_relate_query_with_content;
 
@@ -21,15 +21,20 @@ pub struct ProjectContent {
 #[derive(serde::Deserialize, serde::Serialize, Debug, Clone)]
 pub struct ProjectBlock {
     pub id: Option<String>,
+    #[serde(rename = "type")]
     pub block_type: Option<String>,
     pub data: Option<ProjectBlockData>,
 }
 
 #[derive(serde::Deserialize, serde::Serialize, Debug, Clone)]
 pub struct ProjectBlockData {
+    #[serde(skip_serializing_if = "Option::is_none")]
     text: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     level: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     style: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     items: Option<Vec<String>>,
 }
 
@@ -59,9 +64,8 @@ impl Project {
             Some(_) => {}
         }
 
-        let response: Result<Option<Self>, surrealdb::Error> = db
-            .create("project")
-            .content(self).await;
+        let response: Result<Option<Self>, surrealdb::Error> =
+            db.create("project").content(self).await;
 
         match response {
             Ok(_) => {}
@@ -89,14 +93,10 @@ impl Project {
     async fn relate_user_with_project(
         db: Arc<Surreal<Client>>,
         project_id: Thing,
-        user_id: Thing
+        user_id: Thing,
     ) -> Result<(), String> {
-        let query = get_relate_query_with_content(
-            user_id,
-            project_id,
-            "create_project".to_string(),
-            None
-        );
+        let query =
+            get_relate_query_with_content(user_id, project_id, "create_project".to_string(), None);
 
         let response = db.query(query).await;
 
@@ -105,7 +105,7 @@ impl Project {
                 println!("Error: {:?}", e);
                 Err(format!("{:?}", e))
             }
-            Ok(_) => { Ok(()) }
+            Ok(_) => Ok(()),
         }
     }
 }
