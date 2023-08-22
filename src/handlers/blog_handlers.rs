@@ -13,7 +13,8 @@ use crate::models::blog;
 
 #[derive(serde::Serialize)]
 pub enum BlogRouteResponse {
-    Message { message: String },
+    Success { message: String },
+    Failed { message: String },
 }
 
 #[derive(serde::Deserialize, serde::Serialize, Debug, Validate)]
@@ -59,7 +60,7 @@ pub async fn create_a_blog(
 
     match new_blog.save(db, Some(claim.get_surrealdb_thing())).await {
         Ok(_) => (
-            StatusCode::OK,
+            StatusCode::CREATED,
             Json(BlogCreateResponse {
                 message: "Blog created successfully".to_string(),
             }),
@@ -89,23 +90,24 @@ pub async fn get_blogs_of_the_user_by_user_id(
     }
 }
 
-pub async fn delete_a_blog(
+pub async fn delete_a_blog_of_the_user(
     State(db): State<Arc<Surreal<Client>>>,
     claim: crate::models::user_claim::Claim,
     Path(blog_id): Path<String>,
 ) -> (StatusCode, Json<BlogRouteResponse>) {
-    match blog::Blog::delete_a_blog(db, blog_id, claim.get_surrealdb_thing()).await {
+    match blog::Blog::delete_a_blog_belongs_to_user(db, blog_id, claim.get_surrealdb_thing()).await
+    {
         Ok(_) => (
             StatusCode::OK,
-            Json(BlogRouteResponse::Message {
+            Json(BlogRouteResponse::Failed {
                 message: "Blog deleted successfully".to_string(),
             }),
         ),
         Err(e) => {
             println!("Error: {}", e);
             (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(BlogRouteResponse::Message { message: e }),
+                StatusCode::BAD_REQUEST,
+                Json(BlogRouteResponse::Success { message: e }),
             )
         }
     }

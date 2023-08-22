@@ -3,7 +3,7 @@ use std::sync::Arc;
 use surrealdb::{engine::remote::ws::Client, sql::Thing, Surreal};
 
 use crate::services::query_builder::{
-    get_relate_query_with_content, get_select_query, Column, Item,
+    get_relate_query_with_content, get_select_query, Column, Item, Expression, ExpressionConnector, Return, get_delete_query_with_conditions,
 };
 
 #[derive(serde::Deserialize, serde::Serialize, Debug, Clone)]
@@ -143,6 +143,50 @@ impl Project {
                 println!("Error: {:?}", e);
                 Err(format!("{:?}", e))
             }
+        }
+    }
+
+    pub async fn delete_a_project_belongs_to_user(
+        db: Arc<Surreal<Client>>,
+        project_id: String,
+        user_id: Thing,
+    ) -> Result<(), String> {
+        
+        let condition = vec![(
+            Expression::EdgeExpression(
+                "<-create_project<-(user WHERE id = ".to_string() + &user_id.to_string() + ")",
+            ),
+            ExpressionConnector::End,
+        )];
+
+        let delete_query = get_delete_query_with_conditions(
+            "project:".to_string() + &project_id,
+            condition,
+            Some(Return::Before),
+        );
+
+        let response = db.query(delete_query).await;
+
+        match response {
+            Err(e) => {
+                println!("Error: {:?}", e);
+                Err(format!("{:?}", e))
+            }
+            Ok(mut response) =>  {
+                let project: Result<Vec<Self>, surrealdb::Error> = response.take(0);
+                match project {
+                    Ok(project) => {
+                        if project.len() == 0 {
+                            return Err("Project with given id not found".to_string());
+                        }
+                        Ok(())
+                    },
+                    Err(e) => {
+                        println!("Error: {:?}", e);
+                        Err(format!("{:?}", e))
+                    }
+                }
+            },
         }
     }
 }

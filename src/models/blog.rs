@@ -148,7 +148,7 @@ impl Blog {
         }
     }
 
-    pub async fn delete_a_blog(
+    pub async fn delete_a_blog_belongs_to_user(
         db: Arc<Surreal<Client>>,
         blog_id: String,
         user_id: Thing,
@@ -174,9 +174,9 @@ impl Blog {
                 Err(format!("{:?}", e))
             }
             Ok(mut response) => {
-                let blog: Result<Vec<Blog>, surrealdb::Error> = response.take(0);
+                let blog: Result<Vec<Self>, surrealdb::Error> = response.take(0);
                 if blog.unwrap().len() == 0 {
-                    Err("Blog not found".to_string())
+                    Err("Blog with given id was not found".to_string())
                 } else {
                     Ok(())
                 }

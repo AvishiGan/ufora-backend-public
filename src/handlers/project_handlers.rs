@@ -1,11 +1,21 @@
 use std::sync::Arc;
 
-use axum::{extract::State, http::StatusCode, Json};
+use axum::{
+    extract::{Path, State},
+    http::StatusCode,
+    Json,
+};
 use axum_valid::Valid;
 use surrealdb::{engine::remote::ws::Client, Surreal};
 use validator::Validate;
 
 use crate::models::project;
+
+#[derive(serde::Serialize)]
+pub enum ProjectRouteResponse {
+    Success { message: String },
+    Failed { message: String },
+}
 
 #[derive(serde::Deserialize, serde::Serialize, Debug, Validate)]
 pub struct ProjectCreateRequest {
@@ -66,7 +76,7 @@ pub async fn create_a_project(
     {
         Ok(_) => {
             return (
-                StatusCode::OK,
+                StatusCode::CREATED,
                 Json(ProjectCreateResponse {
                     message: "Project created successfully".to_string(),
                 }),
@@ -95,6 +105,34 @@ pub async fn get_projects_of_the_user_by_user_id(
         Err(e) => {
             println!("Error: {}", e);
             (StatusCode::INTERNAL_SERVER_ERROR, Json(vec![]))
+        }
+    }
+}
+
+pub async fn delete_a_project_of_the_user(
+    State(db): State<Arc<Surreal<Client>>>,
+    claim: crate::models::user_claim::Claim,
+    Path(project_id): Path<String>,
+) -> (StatusCode, Json<ProjectRouteResponse>) {
+    match project::Project::delete_a_project_belongs_to_user(
+        db,
+        project_id,
+        claim.get_surrealdb_thing(),
+    )
+    .await
+    {
+        Ok(_) => (
+            StatusCode::OK,
+            Json(ProjectRouteResponse::Success {
+                message: "Project deleted successfully".to_string(),
+            }),
+        ),
+        Err(e) => {
+            println!("Error: {}", e);
+            (
+                StatusCode::BAD_REQUEST,
+                Json(ProjectRouteResponse::Failed { message: e }),
+            )
         }
     }
 }
