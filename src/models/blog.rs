@@ -1,10 +1,11 @@
-use std::sync::Arc;
+use std::{sync::Arc, vec};
 
 use surrealdb::{engine::remote::ws::Client, sql::Thing, Surreal};
 use validator::Validate;
 
 use crate::services::query_builder::{
-    get_relate_query_with_content, get_select_query, Column, Item,
+    get_delete_query_with_conditions, get_relate_query_with_content, get_select_query, Column,
+    Expression, ExpressionConnector, Item, Return,
 };
 
 #[derive(serde::Deserialize, serde::Serialize, Debug, Clone)]
@@ -143,6 +144,42 @@ impl Blog {
             }
             Err(e) => {
                 return Err(format!("{:?}", e.to_string()));
+            }
+        }
+    }
+
+    pub async fn delete_a_blog(
+        db: Arc<Surreal<Client>>,
+        blog_id: String,
+        user_id: Thing,
+    ) -> Result<(), String> {
+        let condition = vec![(
+            Expression::EdgeExpression(
+                "<-create_blog<-(user WHERE id = ".to_string() + &user_id.to_string() + ")",
+            ),
+            ExpressionConnector::End,
+        )];
+
+        let query = get_delete_query_with_conditions(
+            "blog:".to_string() + &blog_id,
+            condition,
+            Some(Return::Before),
+        );
+
+        let response = db.query(query).await;
+
+        match response {
+            Err(e) => {
+                println!("Error: {:?}", e);
+                Err(format!("{:?}", e))
+            }
+            Ok(mut response) => {
+                let blog: Result<Vec<Blog>, surrealdb::Error> = response.take(0);
+                if blog.unwrap().len() == 0 {
+                    Err("Blog not found".to_string())
+                } else {
+                    Ok(())
+                }
             }
         }
     }

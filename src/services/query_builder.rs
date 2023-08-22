@@ -86,6 +86,7 @@ pub enum Expression {
     LessThanOrEqualTo(String, String),
     IsNone(String),
     IsNotNone(String),
+    EdgeExpression(String),
 }
 
 impl fmt::Display for Expression {
@@ -99,6 +100,7 @@ impl fmt::Display for Expression {
             Expression::LessThanOrEqualTo(column_name, value) => write!(f, " {} <= {} ", column_name, value),
             Expression::IsNone(column_name) => write!(f, " {} = None ", column_name),
             Expression::IsNotNone(column_name) => write!(f, " {} != None ", column_name),
+            Expression::EdgeExpression(edge_condition) => write!(f, " {} ", edge_condition),
         }
     }
 }
@@ -415,6 +417,7 @@ pub fn get_delete_query_for_specific_record(
 pub fn get_delete_query_with_conditions(
     table_name: String,
     condition: Vec<(Expression,ExpressionConnector)>,
+    result: Option<Return>,
 ) -> String {
     let mut query = String::new();
 
@@ -425,6 +428,11 @@ pub fn get_delete_query_with_conditions(
     for (expression_1,expression_2) in condition {
         query.push_str(&expression_1.to_string());
         query.push_str(&expression_2.to_string());
+    }
+
+    match result {
+        None => {}
+        Some(result) => query.push_str(&result.to_string())
     }
 
     query

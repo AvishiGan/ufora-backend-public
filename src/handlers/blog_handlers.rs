@@ -1,11 +1,20 @@
 use std::sync::Arc;
 
-use axum::{extract::State, http::StatusCode, Json};
+use axum::{
+    extract::{Path, State},
+    http::StatusCode,
+    Json,
+};
 use axum_valid::Valid;
 use surrealdb::{engine::remote::ws::Client, Surreal};
 use validator::Validate;
 
 use crate::models::blog;
+
+#[derive(serde::Serialize)]
+pub enum BlogRouteResponse {
+    Message { message: String },
+}
 
 #[derive(serde::Deserialize, serde::Serialize, Debug, Validate)]
 pub struct BlogCreateRequest {
@@ -76,6 +85,28 @@ pub async fn get_blogs_of_the_user_by_user_id(
         Err(e) => {
             println!("Error: {}", e);
             (StatusCode::INTERNAL_SERVER_ERROR, Json(vec![]))
+        }
+    }
+}
+
+pub async fn delete_a_blog(
+    State(db): State<Arc<Surreal<Client>>>,
+    claim: crate::models::user_claim::Claim,
+    Path(blog_id): Path<String>,
+) -> (StatusCode, Json<BlogRouteResponse>) {
+    match blog::Blog::delete_a_blog(db, blog_id, claim.get_surrealdb_thing()).await {
+        Ok(_) => (
+            StatusCode::OK,
+            Json(BlogRouteResponse::Message {
+                message: "Blog deleted successfully".to_string(),
+            }),
+        ),
+        Err(e) => {
+            println!("Error: {}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(BlogRouteResponse::Message { message: e }),
+            )
         }
     }
 }
