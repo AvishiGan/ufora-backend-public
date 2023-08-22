@@ -112,3 +112,23 @@ pub async fn delete_a_blog_of_the_user(
         }
     }
 }
+
+#[derive(serde::Deserialize, serde::Serialize, Debug, Validate)]
+pub struct BlogUpdateRequest {
+    #[validate(
+        length(min = 5, message = "Title must be at least 5 characters long"),
+        required(message = "Title of the blog is required")
+    )]
+    pub title: Option<String>,
+    #[validate(required(message = "New content of the blog is required"))]
+    pub content: Option<BlogCreateRequestContent>,
+}
+
+pub async fn update_blog_content(
+    State(db): State<Arc<Surreal<Client>>>,
+    claim: crate::models::user_claim::Claim,
+    Path(blog_id): Path<String>,
+    Valid(Json(blog_request)): Valid<Json<BlogUpdateRequest>>,
+) {
+    
+}
