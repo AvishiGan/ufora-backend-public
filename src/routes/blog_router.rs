@@ -1,11 +1,11 @@
 use std::sync::Arc;
 
 use crate::handlers::blog_handlers::{
-    create_a_blog, delete_a_blog_of_the_user, get_blogs_of_the_user_by_user_id,
+    create_a_blog, delete_a_blog_of_the_user, get_blogs_of_the_user_by_user_id, update_blog_content,
 };
 
 use axum::{
-    routing::{delete, get, post},
+    routing::{delete, get, post, put},
     Router,
 };
 use surrealdb::{engine::remote::ws::Client, Surreal};
@@ -18,4 +18,5 @@ pub fn get_blog_router() -> Router<Arc<Surreal<Client>>> {
             "/api/blog/delete/:blog_id",
             delete(delete_a_blog_of_the_user),
         )
+        .route("/api/blog/update/:blog_id", put(update_blog_content))
 }

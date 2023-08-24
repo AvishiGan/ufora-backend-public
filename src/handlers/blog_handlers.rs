@@ -129,6 +129,40 @@ pub async fn update_blog_content(
     claim: crate::models::user_claim::Claim,
     Path(blog_id): Path<String>,
     Valid(Json(blog_request)): Valid<Json<BlogUpdateRequest>>,
-) {
+) -> (StatusCode, Json<BlogRouteResponse>) {
+
+    if let Some(mut blog) = blog::Blog::get_blog_by_id(db.clone(), blog_id).await {
+
+        let new_content = blog_request.content.unwrap();
+
+        blog.set_blog_content(blog::BlogContent {
+            time: new_content.time.unwrap().to_string(),
+            blocks: new_content.blocks.unwrap(),
+            version: new_content.version.unwrap(),
+        });
+
+        blog.set_blog_title(blog_request.title.unwrap());
+
+        match blog.update_blog_of_user_by_id(db, claim.get_surrealdb_thing()).await {
+            Ok(_) => (
+                StatusCode::OK,
+                Json(BlogRouteResponse::Success {
+                    message: "Blog updated successfully".to_string(),
+                }),
+            ),
+            Err(e) => {
+                println!("Error: {}", e);
+                (
+                    StatusCode::UNAUTHORIZED,
+                    Json(BlogRouteResponse::Failed { message: e }),
+                )
+            }
+        }
+
+    } else {
+        return (StatusCode::NOT_FOUND, Json(BlogRouteResponse::Failed {
+            message: "Blog for the give id not found".to_string(),
+        }));
+    }
     
 }

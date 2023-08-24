@@ -51,6 +51,30 @@ impl Blog {
         }
     }
 
+    pub async fn get_blog_by_id(db: Arc<Surreal<Client>>, blog_id: String) -> Option<Self> {
+        db.select(("blog", blog_id)).await.unwrap()
+    }
+
+    pub fn get_blog_content(&self) -> &BlogContent {
+        &self.content
+    }
+
+    pub fn set_blog_content(&mut self, blog_content: BlogContent) {
+        self.content = blog_content;
+    }
+
+    pub fn get_blog_title(&self) -> &String {
+        &self.title
+    }
+
+    pub fn set_blog_title(&mut self, blog_title: String) {
+        self.title = blog_title;
+    }
+
+    pub fn get_blog_id(&self) -> &Option<Thing> {
+        &self.id
+    }
+
     pub async fn save(&self, db: Arc<Surreal<Client>>, user: Option<Thing>) -> Result<(), String> {
         match user.clone() {
             None => {
@@ -179,6 +203,38 @@ impl Blog {
                     Err("Blog with given id was not found".to_string())
                 } else {
                     Ok(())
+                }
+            }
+        }
+    }
+
+    pub async fn update_blog_of_user_by_id(
+        &self,
+        db: Arc<Surreal<Client>>,
+        user_id: Thing,
+    ) -> Result<(), String> {
+
+        let blog_json_string = serde_json::to_string(self).unwrap();
+
+        let update_query = "UPDATE ".to_string() + &self.get_blog_id().as_ref().unwrap().to_string() + " CONTENT " + &blog_json_string + " WHERE <-create_blog<-( user WHERE id = " + &user_id.to_string() + " )";
+
+        let response = db.query(update_query).await;
+
+        match response {
+            Err(e) => {
+                println!("Error: {:?}", e);
+                Err(format!("{:?}", e.to_string()))
+            }
+            Ok(mut response) => {
+                let blog: Result<Option<Self>, surrealdb::Error> = response.take(0);
+                match blog {
+                    Ok(Some(_)) => Ok(()),
+                    Ok(None) => {
+                        return Err("You don't have access to edit this blog".to_string());
+                    }
+                    Err(e) => {
+                        return Err(format!("{:?}", e.to_string()));
+                    }
                 }
             }
         }
