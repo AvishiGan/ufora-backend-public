@@ -136,3 +136,59 @@ pub async fn delete_a_project_of_the_user(
         }
     }
 }
+
+#[derive(serde::Deserialize, serde::Serialize, Debug, Validate)]
+pub struct ProjectUpdateRequest {
+    #[validate(
+        length(min = 5, message = "Title must be at least 5 characters long"),
+        required(message = "Title of the project is required")
+    )]
+    title: Option<String>,
+    #[validate(required(message = "Content of the project is required"))]
+    content: Option<ProjectCreateRequestContent>,
+}
+
+pub async fn update_project_content(
+    State(db): State<Arc<Surreal<Client>>>,
+    claim: crate::models::user_claim::Claim,
+    Path(project_id): Path<String>,
+    Valid(Json(project_request)): Valid<Json<ProjectUpdateRequest>>,
+) -> (StatusCode, Json<ProjectRouteResponse>) {
+    if let Some(mut project) = project::Project::get_project_by_id(db.clone(), project_id).await {
+        let new_content = project_request.content.unwrap();
+
+        project.set_project_content(project::ProjectContent {
+            time: new_content.time.unwrap().to_string(),
+            blocks: new_content.blocks.unwrap(),
+            version: new_content.version.unwrap(),
+        });
+
+        project.set_project_title(project_request.title.unwrap());
+
+        match project
+            .update_project_of_user_by_id(db, claim.get_surrealdb_thing())
+            .await
+        {
+            Ok(_) => (
+                StatusCode::OK,
+                Json(ProjectRouteResponse::Success {
+                    message: "Project updated successfully".to_string(),
+                }),
+            ),
+            Err(e) => {
+                println!("Error: {}", e);
+                (
+                    StatusCode::NOT_FOUND,
+                    Json(ProjectRouteResponse::Failed { message: e }),
+                )
+            }
+        }
+    } else {
+        return (
+            StatusCode::NOT_FOUND,
+            Json(ProjectRouteResponse::Failed {
+                message: "Project with given id not found".to_string(),
+            }),
+        );
+    }
+}

@@ -130,9 +130,7 @@ pub async fn update_blog_content(
     Path(blog_id): Path<String>,
     Valid(Json(blog_request)): Valid<Json<BlogUpdateRequest>>,
 ) -> (StatusCode, Json<BlogRouteResponse>) {
-
     if let Some(mut blog) = blog::Blog::get_blog_by_id(db.clone(), blog_id).await {
-
         let new_content = blog_request.content.unwrap();
 
         blog.set_blog_content(blog::BlogContent {
@@ -143,7 +141,10 @@ pub async fn update_blog_content(
 
         blog.set_blog_title(blog_request.title.unwrap());
 
-        match blog.update_blog_of_user_by_id(db, claim.get_surrealdb_thing()).await {
+        match blog
+            .update_blog_of_user_by_id(db, claim.get_surrealdb_thing())
+            .await
+        {
             Ok(_) => (
                 StatusCode::OK,
                 Json(BlogRouteResponse::Success {
@@ -158,11 +159,12 @@ pub async fn update_blog_content(
                 )
             }
         }
-
     } else {
-        return (StatusCode::NOT_FOUND, Json(BlogRouteResponse::Failed {
-            message: "Blog for the give id not found".to_string(),
-        }));
+        return (
+            StatusCode::NOT_FOUND,
+            Json(BlogRouteResponse::Failed {
+                message: "Blog for the give id not found".to_string(),
+            }),
+        );
     }
-    
 }

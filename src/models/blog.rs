@@ -213,10 +213,15 @@ impl Blog {
         db: Arc<Surreal<Client>>,
         user_id: Thing,
     ) -> Result<(), String> {
-
         let blog_json_string = serde_json::to_string(self).unwrap();
 
-        let update_query = "UPDATE ".to_string() + &self.get_blog_id().as_ref().unwrap().to_string() + " CONTENT " + &blog_json_string + " WHERE <-create_blog<-( user WHERE id = " + &user_id.to_string() + " )";
+        let update_query = "UPDATE ".to_string()
+            + &self.get_blog_id().as_ref().unwrap().to_string()
+            + " CONTENT "
+            + &blog_json_string
+            + " WHERE <-create_blog<-( user WHERE id = "
+            + &user_id.to_string()
+            + " )";
 
         let response = db.query(update_query).await;
 
