@@ -6,7 +6,7 @@ use surrealdb::{ Surreal, engine::remote::ws::Client };
 
 use crate::{
     services::{ otp::{ self, OTP }, email },
-    models::{ user::User, undergraduate::Undergraduate },
+    models::user::User,
 };
 
 // request struct for sending otp to email
@@ -157,7 +157,7 @@ pub async fn verify_otp_university_email(
                         .unwrap();
 
                     // update university email verification status of user
-                    Undergraduate::update_university_email_verification(
+                    User::update_university_email_verification(
                         db.clone(),
                         otp_verification_request.email.clone()
                     ).await.unwrap();

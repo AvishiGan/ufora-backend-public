@@ -9,7 +9,7 @@ pub struct Claim {
 }
 
 impl Claim {
-    pub fn get_user_id(&self) -> String {
+    pub fn get_id(&self) -> String {
         self.user_id.clone()
     }
 
@@ -19,7 +19,7 @@ impl Claim {
 
     pub fn from(claim: crate::services::jwt::Claim) -> Self {
         Self {
-            user_id: claim.get_user_id(),
+            user_id: claim.get_id(),
             user_type: claim.get_user_type(),
         }
     }
