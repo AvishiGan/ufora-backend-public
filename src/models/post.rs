@@ -51,12 +51,13 @@ impl fmt::Display for AccessLevel {
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
-struct Comment {
-    id: String,
-    reply: Option<String>,
-    user: Thing,
-    text: String,
-    time: String,
+pub struct Comment {
+    #[serde(default)]
+    pub id: String,
+    pub reply: Option<String>,
+    pub user: Thing,
+    pub text: String,
+    pub time: String,
 }
 
 impl Post {
@@ -246,6 +247,27 @@ impl Post {
             + &user_id.to_string()
             + " ])"
             + " END;";
+
+        let response = db.query(query).await;
+
+        match response {
+            Ok(_) => Ok(()),
+            Err(e) => Err(format!("{:?}", e.to_string())),
+        }
+    }
+
+    pub async fn add_a_comment(
+        db: Arc<Surreal<Client>>,
+        post_id: Thing,
+        comment : Comment,
+    ) -> Result<(),String> {
+        let comment_json_string = serde_json::to_string(&comment).unwrap();
+
+        let query = "UPDATE ".to_string()
+            + &post_id.to_string()
+            + " SET comments += [ "
+            + &comment_json_string
+            + " ]";
 
         let response = db.query(query).await;
 

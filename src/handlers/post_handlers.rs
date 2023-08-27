@@ -11,7 +11,9 @@ use surrealdb::{
     Surreal,
 };
 
-use crate::models::post::{AccessLevel, Post};
+use chrono::prelude::*;
+
+use crate::models::post::{AccessLevel, Post, Comment};
 
 #[derive(serde::Deserialize, Debug)]
 pub struct CreatePostRequest {
@@ -109,6 +111,55 @@ pub async fn add_or_remove_reaction_to_a_post(
             StatusCode::OK,
             Json(CreatePostResponse {
                 message: "Reaction added successfully".to_string(),
+            }),
+        ),
+        Err(e) => {
+            println!("{:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(CreatePostResponse { message: e }),
+            )
+        }
+    }
+}
+
+#[derive(serde::Deserialize, Debug)]
+pub struct AddACommentRequest {
+    text: String,
+    reply: Option<String>,
+}
+
+pub async fn add_a_comment(
+    State(db): State<Arc<Surreal<Client>>>,
+    Path(post_id): Path<String>,
+    claim: crate::models::user_claim::Claim,
+    Json(comment_request): Json<AddACommentRequest>,
+) -> (StatusCode, Json<CreatePostResponse>) {
+
+    let comment = Comment {
+        id: uuid::Uuid::new_v4().to_string(),
+        text: comment_request.text,
+        reply: comment_request.reply,
+        user: claim.get_surrealdb_thing(),
+        time: Utc.from_local_datetime(&chrono::Local::now().naive_local()).single().unwrap().timestamp().to_string(),
+    };
+
+
+    let post = Post::add_a_comment(
+        db,
+        Thing {
+            tb: "post".to_string(),
+            id: Id::String(post_id),
+        },
+        comment,
+    )
+    .await;
+
+    match post {
+        Ok(_) => (
+            StatusCode::OK,
+            Json(CreatePostResponse {
+                message: "Comment added successfully".to_string(),
             }),
         ),
         Err(e) => {
