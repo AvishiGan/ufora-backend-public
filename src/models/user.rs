@@ -26,7 +26,7 @@ use surrealdb_extra::query_builder::{
 
 use crate::services::{
     password,
-    query_builder::{get_select_query, Column, ExpressionConnector, Item},
+    query_builder::{get_select_query, Column, ExpressionConnector, Item, OrderBy},
 };
 
 // model for user
@@ -486,52 +486,47 @@ pub async fn update_user_profile_query(
     }
 
     // only update dob or address if user type is undergraduate or company respectively
-    match user_type.as_str(){
-        "undergraduate" => {
-            match profile_details.date_of_birth {
-                None => {}
-                _ => {
-                    fields.insert(
-                        "date_of_birth".to_string(),
-                        Value::Datetime(Datetime(DateTime::<Utc>::from_utc(
-                            NaiveDate::parse_from_str(&profile_details.date_of_birth.unwrap(), "%d-%m-%Y")
-                                .expect("Invalid date format")
-                                .and_hms_opt(0, 0, 0)
-                                .unwrap(),
-                            Utc,
-                        ))),
-                    );
-                }
+    match user_type.as_str() {
+        "undergraduate" => match profile_details.date_of_birth {
+            None => {}
+            _ => {
+                fields.insert(
+                    "date_of_birth".to_string(),
+                    Value::Datetime(Datetime(DateTime::<Utc>::from_utc(
+                        NaiveDate::parse_from_str(
+                            &profile_details.date_of_birth.unwrap(),
+                            "%d-%m-%Y",
+                        )
+                        .expect("Invalid date format")
+                        .and_hms_opt(0, 0, 0)
+                        .unwrap(),
+                        Utc,
+                    ))),
+                );
             }
-        }
-        "company" => {
-            match profile_details.address {
-                None => {}
-                _ => {
-                    fields.insert(
-                        "address".to_string(),
-                        Value::Strand(Strand(profile_details.address.clone().unwrap())),
-                    );
-                    fields.insert(
-                        "gmap".to_string(),
-                        Value::Strand(Strand(
-                            format!(
-                                "https://www.google.com/maps/embed/v1/place?key={}&q={}",
-                                dotenv!("MAP_API_KEY"),
-                                profile_details.address.unwrap()
-                            )
-                            .replace(" ", "%20"),
-                        )),
-                    );
-                }
+        },
+        "company" => match profile_details.address {
+            None => {}
+            _ => {
+                fields.insert(
+                    "address".to_string(),
+                    Value::Strand(Strand(profile_details.address.clone().unwrap())),
+                );
+                fields.insert(
+                    "gmap".to_string(),
+                    Value::Strand(Strand(
+                        format!(
+                            "https://www.google.com/maps/embed/v1/place?key={}&q={}",
+                            dotenv!("MAP_API_KEY"),
+                            profile_details.address.unwrap()
+                        )
+                        .replace(" ", "%20"),
+                    )),
+                );
             }
-        }
+        },
         _ => {}
     }
-
-   
-
-    
 
     println!("{:?}", fields);
 
@@ -598,5 +593,88 @@ pub async fn get_select_user_query(user_request: UserRequest) -> Result<String, 
         None,
         None,
         None,
+    ))
+}
+
+//  delete user
+// _________________________________________________________
+// pub async fn get_delete_user_query(user_id: String) -> Result<UpdateStatement, StatusCode> {
+//     let mut fields = bmap!();
+
+//     fields.insert("locked_flag".to_string(), Value::True);
+
+//     Ok(UpdateStatement {
+//         what: Values(vec![Value::Table(Table("user".to_string()))]),
+//         data: Some(Data::MergeExpression(Value::Object(Object(fields)))), // optional fields passed here
+//         cond: Some(Cond(Value::Expression(Box::from(Expression {
+//             l: Value::Idiom(Idiom(vec![Part::Field(Ident("id".to_string()))])),
+//             o: surrealdb::sql::Operator::Equal,
+//             r: Value::Strand(Strand(format!("user:{}", user_id))),
+//         })))),
+//         output: None,
+//         timeout: None,
+//         parallel: false,
+//     })
+// }
+
+// get all profiles
+// _________________________________________________________
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct SelectUsersParam { 
+    user_type: Option<String>,
+    order_by_asc: Option<Vec<String>>,
+    order_by_desc: Option<Vec<String>>,
+    limit: Option<i32>,
+    start: Option<i32>,
+}
+
+pub async fn get_all_users_query(user_param: SelectUsersParam) -> Result<String, StatusCode> {
+    let mut condition: Vec<(
+        crate::services::query_builder::Expression,
+        ExpressionConnector,
+    )> = vec![];
+
+    // check whether user type is present or not
+    match user_param.user_type {
+        // if user type is not present then check whether user id is present or not
+        None => {
+            
+        }
+        // if user type is present, continue with user type and check whether user id is present or not
+        _ => {
+             
+            condition.push((
+                crate::services::query_builder::Expression::EqualTo(
+                    "user_type".to_string(),
+                    format!("'{}'", user_param.user_type.unwrap()),
+                ),
+                ExpressionConnector::End,
+            ));
+        }
+    }
+
+ 
+
+
+    Ok(get_select_query(
+        Item::Table("user".to_string()),
+        Column::All,
+        Some(condition),
+        None,
+        // check whether order by asc or desc is present or not
+        match user_param.order_by_asc {
+            None => match user_param.order_by_desc {
+                None => None,
+                _ => 
+                    Some(OrderBy::Descending(user_param.order_by_desc.unwrap()))
+                
+            },
+            _ => {
+                Some(OrderBy::Ascending(user_param.order_by_asc.unwrap()))
+            }
+        },
+        user_param.limit,
+        user_param.start,
     ))
 }
