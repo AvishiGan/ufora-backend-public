@@ -1,5 +1,5 @@
 use core::fmt;
-use std::{sync::Arc, str::FromStr};
+use std::{str::FromStr, sync::Arc};
 
 use chrono::prelude::*;
 use surrealdb::{engine::remote::ws::Client, sql::Thing, Surreal};
@@ -24,7 +24,7 @@ pub struct Post {
 pub enum AccessLevel {
     Public,
     Friends,
-    OnlyMe
+    OnlyMe,
 }
 
 impl FromStr for AccessLevel {
@@ -51,12 +51,13 @@ impl fmt::Display for AccessLevel {
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
-struct Comment {
-    id: String,
-    reply: Option<String>,
-    user: Thing,
-    text: String,
-    time: String,
+pub struct Comment {
+    #[serde(default)]
+    pub id: String,
+    pub reply: Option<String>,
+    pub user: Thing,
+    pub text: String,
+    pub time: String,
 }
 
 impl Post {
@@ -218,6 +219,60 @@ impl Post {
                     Ok(())
                 }
             }
+            Err(e) => Err(format!("{:?}", e.to_string())),
+        }
+    }
+
+    pub async fn add_or_remove_reaction(
+        db: Arc<Surreal<Client>>,
+        post_id: Thing,
+        user_id: Thing,
+    ) -> Result<(), String> {
+        let query = "LET $reactions = (SELECT VALUE reactions FROM ".to_string()
+            + &post_id.to_string()
+            + " ); "
+            // Check whether user has already reacted to the post or not
+            + "IF $reactions CONTAINS "
+            + &user_id.to_string()
+            // If user has already reacted, then remove the reaction
+            + " THEN (UPDATE "
+            + &post_id.to_string()
+            + " SET reactions -= [ "
+            + &user_id.to_string()
+            + " ])"
+            // If user has not reacted, then add the reaction
+            + " ELSE (UPDATE "
+            + &post_id.to_string()
+            + " SET reactions += [ "
+            + &user_id.to_string()
+            + " ])"
+            + " END;";
+
+        let response = db.query(query).await;
+
+        match response {
+            Ok(_) => Ok(()),
+            Err(e) => Err(format!("{:?}", e.to_string())),
+        }
+    }
+
+    pub async fn add_a_comment(
+        db: Arc<Surreal<Client>>,
+        post_id: Thing,
+        comment : Comment,
+    ) -> Result<(),String> {
+        let comment_json_string = serde_json::to_string(&comment).unwrap();
+
+        let query = "UPDATE ".to_string()
+            + &post_id.to_string()
+            + " SET comments += [ "
+            + &comment_json_string
+            + " ]";
+
+        let response = db.query(query).await;
+
+        match response {
+            Ok(_) => Ok(()),
             Err(e) => Err(format!("{:?}", e.to_string())),
         }
     }

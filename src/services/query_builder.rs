@@ -1,7 +1,7 @@
 use core::fmt;
 
 use surrealdb::sql::Thing;
-
+use surrealdb_extra::table;
 
 // Item enum specifies whether the query is for a table or a record
 // for a table, Item::Table("table_name".to_string()) is used
@@ -9,14 +9,14 @@ use surrealdb::sql::Thing;
 #[derive(Debug)]
 pub enum Item {
     Table(String),
-    Record {tb: String, id: String},
+    Record { tb: String, id: String },
 }
 
 impl fmt::Display for Item {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Item::Table(table_name) => write!(f, "{}", table_name),
-            Item::Record {tb, id} => write!(f, "{}:{}", tb, id),
+            Item::Record { tb, id } => write!(f, "{}:{}", tb, id),
         }
     }
 }
@@ -54,7 +54,7 @@ impl fmt::Display for Column {
 pub enum ExpressionConnector {
     And,
     Or,
-    End
+    End,
 }
 
 impl fmt::Display for ExpressionConnector {
@@ -86,19 +86,29 @@ pub enum Expression {
     LessThanOrEqualTo(String, String),
     IsNone(String),
     IsNotNone(String),
+    EdgeExpression(String),
 }
 
 impl fmt::Display for Expression {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Expression::EqualTo(column_name, value) => write!(f, " {} = {} ", column_name, value),
-            Expression::NotEqualTo(column_name, value) => write!(f, " {} != {} ", column_name, value),
-            Expression::GreaterThan(column_name, value) => write!(f, " {} > {} ", column_name, value),
+            Expression::NotEqualTo(column_name, value) => {
+                write!(f, " {} != {} ", column_name, value)
+            }
+            Expression::GreaterThan(column_name, value) => {
+                write!(f, " {} > {} ", column_name, value)
+            }
             Expression::LessThan(column_name, value) => write!(f, " {} < {} ", column_name, value),
-            Expression::GreaterThanOrEqualTo(column_name, value) => write!(f, " {} >= {} ", column_name, value),
-            Expression::LessThanOrEqualTo(column_name, value) => write!(f, " {} <= {} ", column_name, value),
+            Expression::GreaterThanOrEqualTo(column_name, value) => {
+                write!(f, " {} >= {} ", column_name, value)
+            }
+            Expression::LessThanOrEqualTo(column_name, value) => {
+                write!(f, " {} <= {} ", column_name, value)
+            }
             Expression::IsNone(column_name) => write!(f, " {} = None ", column_name),
             Expression::IsNotNone(column_name) => write!(f, " {} != None ", column_name),
+            Expression::EdgeExpression(edge_condition) => write!(f, " {} ", edge_condition),
         }
     }
 }
@@ -150,7 +160,7 @@ impl fmt::Display for OrderBy {
                 column_names_string.pop();
                 column_names_string.pop();
                 write!(f, "{}", column_names_string + " ASC")
-            },
+            }
             OrderBy::Descending(column_names) => {
                 let mut column_names_string = String::from(" ORDER BY ");
                 for column_name in column_names {
@@ -160,7 +170,7 @@ impl fmt::Display for OrderBy {
                 column_names_string.pop();
                 column_names_string.pop();
                 write!(f, "{}", column_names_string + " DESC")
-            },
+            }
         }
     }
 }
@@ -176,8 +186,8 @@ pub enum Return {
     Difference,
     Before,
     After,
-    Fields {fields: Vec<String>},
-} 
+    Fields { fields: Vec<String> },
+}
 
 impl fmt::Display for Return {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -186,7 +196,7 @@ impl fmt::Display for Return {
             Return::Difference => write!(f, " RETURN DIFF"),
             Return::Before => write!(f, " RETURN BEFORE"),
             Return::After => write!(f, " RETURN AFTER"),
-            Return::Fields {fields} => {
+            Return::Fields { fields } => {
                 let mut fields_string = String::from(" RETURN ");
                 for field in fields {
                     fields_string.push_str(field);
@@ -195,7 +205,7 @@ impl fmt::Display for Return {
                 fields_string.pop();
                 fields_string.pop();
                 write!(f, "{}", fields_string)
-            },
+            }
         }
     }
 }
@@ -210,14 +220,13 @@ impl fmt::Display for Return {
 pub fn get_select_query(
     table_name: Item,
     column_names: Column,
-    condition: Option<Vec<(Expression,ExpressionConnector)>>,
+    condition: Option<Vec<(Expression, ExpressionConnector)>>,
     group_by: Option<Group>,
     order_by: Option<OrderBy>,
     limit: Option<i32>, // limit is the number of records to be returned
     start: Option<i32>, // start is the number of records to be skipped
 ) -> String {
-
-    let mut  query = String::new();
+    let mut query = String::new();
 
     query.push_str(&column_names.to_string());
 
@@ -228,15 +237,14 @@ pub fn get_select_query(
     if let Some(condition) = condition {
         if condition.len() > 0 {
             query.push_str(" WHERE ");
-            for (expression_1,expression_2) in condition {
+            for (expression_1, expression_2) in condition {
                 query.push_str(&expression_1.to_string());
                 query.push_str(&expression_2.to_string());
             }
         } else {
             println!("No condition provided")
         }
-        
-    } 
+    }
 
     if let Some(group_by) = group_by {
         query.push_str(&group_by.to_string());
@@ -247,11 +255,11 @@ pub fn get_select_query(
     }
 
     if let Some(limit) = limit {
-        query.push_str(&format!(" LIMIT {}",limit));
+        query.push_str(&format!(" LIMIT {}", limit));
     }
 
     if let Some(start) = start {
-        query.push_str(&format!(" START {}",start));
+        query.push_str(&format!(" START {}", start));
     }
 
     query
@@ -328,7 +336,6 @@ impl DatabaseObject {
 
 impl fmt::Display for DatabaseObject {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-
         if self.keys.len() != self.values.len() {
             panic!("Keys and values are not of the same length");
         }
@@ -337,8 +344,8 @@ impl fmt::Display for DatabaseObject {
 
         query.push_str("{");
 
-        for (key,value) in self.keys.iter().zip(self.values.iter()) {
-            query.push_str(&format!("{}: {}, ",key,value));
+        for (key, value) in self.keys.iter().zip(self.values.iter()) {
+            query.push_str(&format!("{}: {}, ", key, value));
         }
 
         query.pop();
@@ -350,11 +357,67 @@ impl fmt::Display for DatabaseObject {
     }
 }
 
+// update operator for set , += ,  -= or =
+#[derive(Debug)]
+pub enum UpdateSetOperator {
+    Add,
+    Subtract,
+    Equal,
+}
+
+impl fmt::Display for UpdateSetOperator {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            UpdateSetOperator::Add => write!(f, " += "),
+            UpdateSetOperator::Subtract => write!(f, " -= "),
+            UpdateSetOperator::Equal => write!(f, " = "),
+        }
+    }
+}
+
+// update object for set operator
+// fields is a vector of tuples of the form (field_name, update_operator, value)
+#[derive(Debug)]
+pub struct UpdateObjectForSet {
+    pub fields: Vec<(String, UpdateSetOperator, String)>,
+}
+
+impl fmt::Display for UpdateObjectForSet {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut query = String::new();
+
+        for (field_name, update_operator, value) in self.fields.iter() {
+            query.push_str(&format!("{} {} {}, ", field_name, update_operator, value));
+        }
+
+        query.pop();
+        query.pop();
+
+        write!(f, "{}", query)
+    }
+}
+
+// update operator for merge or content
+#[derive(Debug)]
+pub enum UpdateOperator {
+    Merge,
+    Content,
+}
+
+impl fmt::Display for UpdateOperator {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            UpdateOperator::Merge => write!(f, " MERGE "),
+            UpdateOperator::Content => write!(f, " CONTENT "),
+        }
+    }
+}
+
 // to insert a single json object into a table
 pub fn get_insert_query_for_an_object(
     table_name: String,
     object: DatabaseObject,
-    result: Return
+    result: Return,
 ) -> String {
     let mut query = String::new();
 
@@ -396,10 +459,7 @@ pub fn get_insert_query_for_an_array_of_objects(
 }
 
 // to delete a specific record from a table with known record id
-pub fn get_delete_query_for_specific_record(
-    table_name: String,
-    record_id: String,
-) -> String {
+pub fn get_delete_query_for_specific_record(table_name: String, record_id: String) -> String {
     let mut query = String::new();
 
     query.push_str("DELETE ");
@@ -414,7 +474,8 @@ pub fn get_delete_query_for_specific_record(
 // conditions follow same syntax as in get_select_query
 pub fn get_delete_query_with_conditions(
     table_name: String,
-    condition: Vec<(Expression,ExpressionConnector)>,
+    condition: Vec<(Expression, ExpressionConnector)>,
+    result: Option<Return>,
 ) -> String {
     let mut query = String::new();
 
@@ -422,9 +483,14 @@ pub fn get_delete_query_with_conditions(
     query.push_str(&table_name);
     query.push_str(" WHERE ");
 
-    for (expression_1,expression_2) in condition {
+    for (expression_1, expression_2) in condition {
         query.push_str(&expression_1.to_string());
         query.push_str(&expression_2.to_string());
+    }
+
+    match result {
+        None => {}
+        Some(result) => query.push_str(&result.to_string()),
     }
 
     query
@@ -436,7 +502,6 @@ pub fn get_create_query_for_an_object(
     object: DatabaseObject,
     result: Return,
 ) -> String {
-
     let mut query = String::from("CREATE ");
 
     query.push_str(&table_name.to_string());
@@ -454,12 +519,11 @@ pub fn get_relate_query_with_content(
     from: Thing,
     to: Thing,
     relation_name: String,
-    content: Option<DatabaseObject>
+    content: Option<DatabaseObject>,
 ) -> String {
-
     let mut query = String::from("Relate ");
 
-    query.push_str(&from.to_string() );
+    query.push_str(&from.to_string());
     query.push_str("->");
     query.push_str(&relation_name);
     query.push_str("->");
@@ -467,7 +531,56 @@ pub fn get_relate_query_with_content(
 
     match content {
         None => {}
-        Some(content) => query.push_str(&content.to_string())
+        Some(content) => query.push_str(&content.to_string()),
+    }
+
+    query
+}
+
+pub fn get_update_query_with_set_opertor(
+    table: Item,
+    update_object: UpdateObjectForSet,
+    condition: Option<Vec<(Expression, ExpressionConnector)>>,
+    result: Option<Return>,
+) -> String {
+    let mut query = String::from("UPDATE ");
+
+    query.push_str(&table.to_string());
+
+    query.push_str(" SET ");
+
+    query.push_str(&update_object.to_string());
+
+    for (expression_1, expression_2) in condition.unwrap() {
+        query.push_str(&expression_1.to_string());
+        query.push_str(&expression_2.to_string());
+    }
+
+    match result {
+        None => {}
+        Some(result) => query.push_str(&result.to_string()),
+    }
+
+    query
+}
+
+pub fn get_update_query_for_merge_or_content(
+    table: Item,
+    update_operator: UpdateOperator,
+    update_object: DatabaseObject,
+    result: Option<Return>,
+) -> String {
+    let mut query = String::from("UPDATE ");
+
+    query.push_str(&table.to_string());
+
+    query.push_str(&update_operator.to_string());
+
+    query.push_str(&update_object.to_string());
+
+    match result {
+        None => {}
+        Some(result) => query.push_str(&result.to_string()),
     }
 
     query
