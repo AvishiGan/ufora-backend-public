@@ -175,7 +175,7 @@ pub async fn verify_forgot_password_otp(
 
                     // encrypt user id as a token with the timestamp adding 10 minutes to it
                     let password_reset_token =
-                        user.get_user_id().to_raw() +
+                        user.get_id().to_raw() +
                         "#" +
                         (
                             Utc.from_local_datetime(&chrono::Local::now().naive_local())

@@ -23,7 +23,7 @@ pub struct Claim {
 
 // implementation of claim struct to get user id and user type
 impl Claim {
-    pub fn get_user_id(&self) -> String {
+    pub fn get_id(&self) -> String {
         self.user_id.clone()
     }
     pub fn get_user_type(&self) -> String {

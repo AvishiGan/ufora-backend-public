@@ -9,7 +9,7 @@ use surrealdb::{Surreal, engine::remote::ws::Client, sql::{Statement,statements:
 
 use chrono::prelude::*;
 
-use crate::{models::{undergraduate::Undergraduate,user::User}, handlers::test_handlers};
+use crate::{models::user::User, handlers::test_handlers};
 
 use crate::services::{otp::get_an_otp,email::send_email};
 
