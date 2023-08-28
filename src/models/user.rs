@@ -7,7 +7,7 @@ use dotenvy_macro::dotenv;
 use serde::{Deserialize, Serialize};
 use simple_collection_macros::bmap;
 
-use axum::http::{response, StatusCode};
+use axum::http::StatusCode;
 
 use surrealdb::{
     engine::remote::ws::Client,
@@ -40,6 +40,7 @@ pub struct User {
     locked_flag: Option<bool>,
     user_type: Option<String>,
     email: Option<String>,
+    registration_date: Option<Datetime>,
     email_verification_flag: Option<bool>,
     pub invalid_login_attempts: Option<i32>,
 
@@ -56,6 +57,7 @@ pub struct User {
     // undergraduate params
     date_of_birth: Option<String>,
     university: Option<String>,
+    is_premium: Option<bool>,
 }
 
 // implementation of user
@@ -100,7 +102,8 @@ impl User {
                 "user_type".to_string() => Value::Strand(Strand(user_type)),
                 "email".to_string() => Value::Strand(Strand(self.email.unwrap())),
                 "email_verification_flag".to_string() => Value::False,
-                "invalid_login_attempts".to_string() => Value::Number(Number::Int(0))
+                "invalid_login_attempts".to_string() => Value::Number(Number::Int(0)),
+                "registration_date".to_string() => Value::Datetime(Datetime::default()),
             ))))),
             output: Some(Output::Null),
             timeout: None,
@@ -370,6 +373,7 @@ impl User {
         let response = Query::new()
             .from("user", None)
             .limit(1)
+            .field("name")
             .field("username")
             .field("email")
             .field("password")
