@@ -14,8 +14,8 @@ use surrealdb::{
     opt::PatchOp,
     sql::{
         statements::{CreateStatement, SelectStatement, UpdateStatement},
-        Cond, Data, Datetime, Expression, Field, Fields, Ident, Idiom, Limit, Number, Object,
-        Operator, Output, Part, Strand, Table, Thing, Value, Values,
+        Array, Cond, Data, Datetime, Expression, Field, Fields, Ident, Idiom, Limit, Number,
+        Object, Operator, Output, Part, Strand, Table, Thing, Value, Values,
     },
     Surreal,
 };
@@ -58,6 +58,18 @@ pub struct User {
     date_of_birth: Option<String>,
     university: Option<String>,
     is_premium: Option<bool>,
+
+    // club params
+    club_type: Option<String>,
+    officials: Option<Vec<ClubOfficial>>,
+    club_verification_file: Option<String>,
+    club_verification_flag: Option<bool>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct ClubOfficial {
+    user_id: Thing,
+    role: String,
 }
 
 // implementation of user
@@ -260,7 +272,7 @@ impl User {
         self.locked_flag.unwrap()
     }
 
-    // returns user typw
+    // returns user type
     // __________________________________
     pub fn get_user_type(&self) -> String {
         self.user_type.as_ref().unwrap().clone()
@@ -414,6 +426,88 @@ impl User {
         match user {
             Some(user) => Ok(user),
             None => Err(StatusCode::NOT_FOUND),
+        }
+    }
+
+    pub async fn get_club_account_from_email_or_name(
+        db: Arc<Surreal<Client>>,
+        email: Option<String>,
+        name: Option<String>,
+    ) -> Option<Self> {
+        db.query(get_select_query(
+            Item::Table("user".to_string()),
+            Column::All,
+            Some(vec![
+                (
+                    crate::services::query_builder::Expression::EqualTo(
+                        "email".to_string(),
+                        format!("'{}'", email.unwrap()),
+                    ),
+                    ExpressionConnector::Or,
+                ),
+                (
+                    crate::services::query_builder::Expression::EqualTo(
+                        "name".to_string(),
+                        format!("'{}'", name.unwrap()),
+                    ),
+                    ExpressionConnector::End,
+                ),
+            ]),
+            None,
+            None,
+            None,
+            None,
+        ))
+        .await
+        .unwrap()
+        .take(0)
+        .unwrap()
+    }
+
+    pub async fn create_a_club_account(
+        db: Arc<Surreal<Client>>,
+        username: String,
+        name: String,
+        email: String,
+        club_type: String,
+        creator: Thing,
+        club_verification_file: String,
+        profile_pic: Option<String>,
+    ) -> Result<serde_json::Value,String>{
+        let create_club_query = CreateStatement {
+            what: Values(vec![Value::Table(Table("user".to_string()))]),
+            data: Some(Data::ContentExpression(Value::Object(Object(bmap!(
+                "username".to_string() => Value::Strand(Strand(username)),
+                "name".to_string() => Value::Strand(Strand(name)),
+                "user_type".to_string() => Value::Strand(Strand("club".to_string())),
+                "email".to_string() => Value::Strand(Strand(email)),
+                "email_verification_flag".to_string() => Value::False,
+                "registration_date".to_string() => Value::Datetime(Datetime::default()),
+                "club_type".to_string() => Value::Strand(Strand(club_type)),
+                "club_verification_file".to_string() => Value::Strand(Strand(club_verification_file)),
+                "club_verification_flag".to_string() => Value::False,
+                "profile_pic".to_string() => Value::Strand(Strand(profile_pic.unwrap_or("".to_string()))),
+                "officials".to_string() => Value::Array(Array (vec![Value::Object(Object(bmap!(
+                    "user_id".to_string() => Value::Thing(creator),
+                    "role".to_string() => Value::Strand(Strand("admin".to_string())),
+                )))])),
+            ))))),
+            output: Some(Output::Fields(Fields(
+                vec![Field::Alone(Value::Idiom(Idiom(vec![Part::Field(Ident(
+                    "email".to_string(),
+                ))])))],
+                false,
+            ))),
+            timeout: None,
+            parallel: false,
+        };
+
+        match db.query(create_club_query).await {
+            Ok(mut response) => {
+                let club: Option<serde_json::Value> = response.take(0).unwrap();
+                Ok(club.unwrap())
+            },
+            Err(e) => Err(e.to_string()),
         }
     }
 }
@@ -625,7 +719,7 @@ pub async fn get_select_user_query(user_request: UserRequest) -> Result<String, 
 // _________________________________________________________
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct SelectUsersParam { 
+pub struct SelectUsersParam {
     user_type: Option<String>,
     order_by_asc: Option<Vec<String>>,
     order_by_desc: Option<Vec<String>>,
@@ -642,12 +736,9 @@ pub async fn get_all_users_query(user_param: SelectUsersParam) -> Result<String,
     // check whether user type is present or not
     match user_param.user_type {
         // if user type is not present then check whether user id is present or not
-        None => {
-            
-        }
+        None => {}
         // if user type is present, continue with user type and check whether user id is present or not
         _ => {
-             
             condition.push((
                 crate::services::query_builder::Expression::EqualTo(
                     "user_type".to_string(),
@@ -658,9 +749,6 @@ pub async fn get_all_users_query(user_param: SelectUsersParam) -> Result<String,
         }
     }
 
- 
-
-
     Ok(get_select_query(
         Item::Table("user".to_string()),
         Column::All,
@@ -670,13 +758,9 @@ pub async fn get_all_users_query(user_param: SelectUsersParam) -> Result<String,
         match user_param.order_by_asc {
             None => match user_param.order_by_desc {
                 None => None,
-                _ => 
-                    Some(OrderBy::Descending(user_param.order_by_desc.unwrap()))
-                
+                _ => Some(OrderBy::Descending(user_param.order_by_desc.unwrap())),
             },
-            _ => {
-                Some(OrderBy::Ascending(user_param.order_by_asc.unwrap()))
-            }
+            _ => Some(OrderBy::Ascending(user_param.order_by_asc.unwrap())),
         },
         user_param.limit,
         user_param.start,

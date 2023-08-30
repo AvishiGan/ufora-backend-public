@@ -33,8 +33,6 @@ pub struct SomeStruct {
 
 async fn test_handler(
     State(db) : State<Arc<Surreal<Client>>>,
-    Valid(Json(request)) : Valid<Json<SomeStruct>>
 ) -> Result<(),StatusCode> {
-    println!("{:?}",request);
     Ok(())
 }

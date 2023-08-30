@@ -27,3 +27,6 @@ pub mod blog_handlers;
 
 // handlers related to projects -> create, update, delete, get
 pub mod project_handlers;
+
+// handlers related to clubs -> create, update, delete, get
+pub mod club_handlers;

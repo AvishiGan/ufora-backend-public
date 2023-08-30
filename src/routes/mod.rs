@@ -8,6 +8,7 @@ mod forgot_password_router;
 mod post_router;
 mod blog_router;
 mod project_router;
+mod club_router;
 
 use std::sync::Arc;
 
@@ -25,6 +26,7 @@ use forgot_password_router::get_forgot_password_router;
 use post_router::get_post_router;
 use blog_router::get_blog_router;
 use project_router::get_project_router;
+use club_router::get_club_router;
 use surrealdb::{ Surreal, engine::remote::ws::Client };
 
 use self::profile_router::get_profile_router;
@@ -33,12 +35,13 @@ pub fn get_router() -> Router<Arc<Surreal<Client>>> {
     let cors = CorsLayer::new().allow_methods(vec![Method::GET, Method::POST]).allow_origin(Any);
 
     Router::new()
+        .merge(test_route::get_test_router())
+        .merge(get_club_router())
         .merge(get_project_router())
         .merge(get_blog_router())
         .merge(get_post_router())
         .merge(get_logout_router())
         .merge(get_profile_router())
-        .merge(test_route::get_test_router())
         .layer(middleware::from_fn(middlewares::auth::validate_jwt))
         .merge(get_login_router())
         .merge(get_forgot_password_router())
