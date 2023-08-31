@@ -30,3 +30,6 @@ pub mod project_handlers;
 
 // handlers related to clubs -> create, update, delete, get
 pub mod club_handlers;
+
+// handlers related to chat -> websocket connections
+pub mod chat_handlers;
