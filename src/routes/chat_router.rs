@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use axum::{Extension, Router};
+use axum::{Extension, Router, routing::get};
 use surrealdb::{engine::remote::ws::Client, Surreal};
 
 use tracing_subscriber::{prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt};
@@ -14,6 +14,7 @@ pub fn get_chat_router() -> Router<Arc<Surreal<Client>>> {
 
     Router::new()
         .route("/ws", get(websocket_handler))
+        // websocket extension 
         .layer(Extension(web_socket_extension))
 }
 

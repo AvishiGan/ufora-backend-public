@@ -1,7 +1,6 @@
 use core::fmt;
 
 use surrealdb::sql::Thing;
-use surrealdb_extra::table;
 
 // Item enum specifies whether the query is for a table or a record
 // for a table, Item::Table("table_name".to_string()) is used

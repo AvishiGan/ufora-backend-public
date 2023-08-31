@@ -1,4 +1,7 @@
-use std::{sync::Mutex, collections::{HashMap, HashSet}};
+use std::{
+    collections::{HashMap, HashSet},
+    sync::Mutex,
+};
 
 use tokio::sync::broadcast;
 
