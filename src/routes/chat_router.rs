@@ -5,14 +5,15 @@ use surrealdb::{engine::remote::ws::Client, Surreal};
 
 use tracing_subscriber::{prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt};
 
+use crate::handlers::chat_handlers::websocket_handler;
+
 pub fn get_chat_router() -> Router<Arc<Surreal<Client>>> {
     let web_socket_extension = Arc::new(crate::services::websocket::get_websocket_extension());
 
     tracing_subscriber_init();
 
     Router::new()
-        // .route("/api/chat", post(chat_handler))
-        // .route("/api/chat/:id", get(chat_handlers::chat_route))
+        .route("/ws", get(websocket_handler))
         .layer(Extension(web_socket_extension))
 }
 

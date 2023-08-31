@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 async-trait = "0.1.72"
-axum = { version = "0.6.18", features = ["headers"] }
+axum = { version = "0.6.18", features = ["headers", "ws"] }
 axum-auth = "0.4.0"
 axum-valid = { version = "0.5.1", features = ["into_json"] }
 bcrypt = "0.15.0"
