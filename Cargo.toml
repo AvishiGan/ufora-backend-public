@@ -17,6 +17,7 @@ cors = "0.1.0"
 dateparser = "0.2.0"
 dotenvy = "0.15.7"
 dotenvy_macro = "0.15.7"
+futures = "0.3.28"
 jsonwebtoken = "8.3.0"
 lettre = { version = "0.10.4", features = ["tokio1-native-tls", "sendmail-transport"] }
 magic-crypt = "3.1.12"
@@ -30,5 +31,7 @@ surrealdb_extra = "0.1.1"
 tokio = { version = "1.29.1", features = ["rt-multi-thread", "macros"] }
 tower-cookies = "0.9.0"
 tower-http = { version = "0.4.1", features = ["cors"] }
+tracing = "0.1.37"
+tracing-subscriber = { version = "0.3.17", features = ["env-filter"] }
 uuid = "1.4.1"
 validator = { version = "0.16.1", features = ["derive"] }
