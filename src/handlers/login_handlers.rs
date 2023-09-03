@@ -1,10 +1,14 @@
 use std::sync::Arc;
 
-use axum::{ extract::State, Json, http::StatusCode };
-use surrealdb::{ Surreal, engine::remote::ws::Client };
-use tower_cookies::{ Cookie, Cookies };
+use axum::{
+    extract::{Path, State},
+    http::StatusCode,
+    Json,
+};
+use surrealdb::{engine::remote::ws::Client, Surreal};
+use tower_cookies::{Cookie, Cookies};
 
-use crate::{ services::jwt, models::user::User };
+use crate::{models::user::{User, ClubOfficial}, services::jwt};
 
 // request struct for login
 #[derive(serde::Deserialize, Debug)]
@@ -17,13 +21,8 @@ pub struct LoginRequest {
 // response enumeration for login
 #[derive(serde::Serialize)]
 pub enum LoginResponse {
-    Success {
-        message: String,
-        token: String,
-    },
-    InvalidLogin {
-        message: String,
-    },
+    Success { message: String, token: String },
+    InvalidLogin { message: String },
     InternalServerError,
 }
 
@@ -31,7 +30,7 @@ pub enum LoginResponse {
 pub async fn login_via_platform(
     State(db): State<Arc<Surreal<Client>>>,
     cookies: Cookies,
-    Json(login_request): Json<LoginRequest>
+    Json(login_request): Json<LoginRequest>,
 ) -> (StatusCode, Json<LoginResponse>) {
     match login_request.password.clone() {
         None => {
@@ -49,8 +48,9 @@ pub async fn login_via_platform(
     let user = User::get_user_by_email_or_username(
         db.clone(),
         login_request.email.clone(),
-        login_request.username.clone()
-    ).await;
+        login_request.username.clone(),
+    )
+    .await;
 
     match user {
         Err(_) => {
@@ -80,16 +80,15 @@ pub async fn login_via_platform(
     }
 
     // check whether password is correct
-    match
-        crate::services::password::verify_password(
-            login_request.password.unwrap(),
-            user.get_password().unwrap()
-        )
-    {
+    match crate::services::password::verify_password(
+        login_request.password.unwrap(),
+        user.get_password().unwrap(),
+    ) {
         Ok(false) => {
             // update invalid login attempts
             let new_invalid_login_attempts = user.invalid_login_attempts.unwrap() + 1;
-            user.update_login_attempts(db.clone(), new_invalid_login_attempts).await;
+            user.update_login_attempts(db.clone(), new_invalid_login_attempts)
+                .await;
             return (
                 StatusCode::UNAUTHORIZED,
                 Json(LoginResponse::InvalidLogin {
@@ -99,12 +98,17 @@ pub async fn login_via_platform(
         }
         Ok(true) => {}
         Err(_) => {
-            return (StatusCode::INTERNAL_SERVER_ERROR, Json(LoginResponse::InternalServerError));
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(LoginResponse::InternalServerError),
+            );
         }
     }
 
     // create jwt token
-    let token = jwt::get_jwt(user.get_id().id.to_string(), user.get_user_type()).await.unwrap();
+    let token = jwt::get_jwt(user.get_id().id.to_string(), user.get_user_type())
+        .await
+        .unwrap();
 
     user.update_login_attempts(db.clone(), 0).await;
 
@@ -121,6 +125,78 @@ pub async fn login_via_platform(
 
     (
         StatusCode::OK,
-        Json(LoginResponse::Success { message: "Login Successful".to_string(), token }),
+        Json(LoginResponse::Success {
+            message: "Login Successful".to_string(),
+            token,
+        }),
     )
+}
+
+pub async fn club_login(
+    State(db): State<Arc<Surreal<Client>>>,
+    user: crate::models::user_claim::Claim,
+    Path(club_id): Path<String>,
+) -> (StatusCode, Json<LoginResponse>) {
+    if let Ok(club) = User::get_user_by_id(db.clone(), club_id.clone()).await {
+        if club.get_user_type() == "club" {
+            if let Some(club_officials) = club.get_club_officials() {
+                let user_id = user.get_surrealdb_thing();
+                let mut club_official_info: Option<ClubOfficial> = None;
+                for club_official in club_officials {
+                    if club_official.get_user_id() == user_id {
+                        club_official_info = Some(club_official);
+                        break;
+                    }
+                }
+                if let Some(club_official_info) = club_official_info {
+                    match jwt::get_club_jwt(club_id, club_official_info.get_role()) {
+                        Ok(token) => {
+                            (
+                                StatusCode::OK,
+                                Json(LoginResponse::Success {
+                                    message: "Login Successful".to_string(),
+                                    token,
+                                }),
+                            )
+                        }
+                        Err(_) => {
+                            (
+                                StatusCode::INTERNAL_SERVER_ERROR,
+                                Json(LoginResponse::InternalServerError),
+                            )
+                        }
+                    }
+                    
+                } else {
+                    (
+                        StatusCode::UNAUTHORIZED,
+                        Json(LoginResponse::InvalidLogin {
+                            message: "You do not have access to this club account".to_string(),
+                        }),
+                    )
+                }
+            } else {
+                (
+                    StatusCode::UNAUTHORIZED,
+                    Json(LoginResponse::InvalidLogin {
+                        message: "Invalid Login Credentials".to_string(),
+                    }),
+                )
+            }
+        } else {
+            (
+                StatusCode::UNAUTHORIZED,
+                Json(LoginResponse::InvalidLogin {
+                    message: "You do not have access to this club account".to_string(),
+                }),
+            )
+        }
+    } else {
+        (
+            StatusCode::BAD_REQUEST,
+            Json(LoginResponse::InvalidLogin {
+                message: "Invalid Login Credentials".to_string(),
+            }),
+        )
+    }
 }
