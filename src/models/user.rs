@@ -66,10 +66,20 @@ pub struct User {
     club_verification_flag: Option<bool>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ClubOfficial {
     user_id: Thing,
     role: String,
+}
+
+impl ClubOfficial {
+    pub fn get_user_id(&self) -> Thing {
+        self.user_id.clone()
+    }
+
+    pub fn get_role(&self) -> String {
+        self.role.clone()
+    }
 }
 
 // implementation of user
@@ -90,6 +100,14 @@ impl User {
             password,
             email,
             ..Default::default()
+        }
+    }
+
+    pub async fn get_user_by_id(db: Arc<Surreal<Client>>, user_id: String) -> Result<Self, String> {
+        let response: Result<Option<Self>, surrealdb::Error> = db.select(("user", user_id)).await;
+        match response {
+            Ok(user) => Ok(user.unwrap()),
+            Err(e) => Err(e.to_string()),
         }
     }
 
@@ -284,6 +302,14 @@ impl User {
         self.id.as_ref().unwrap().clone()
     }
 
+    pub fn get_club_officials(&self) -> Option<Vec<ClubOfficial>> {
+        if self.user_type.clone().unwrap() == "club" {
+            self.officials.clone()
+        } else {
+            None
+        }
+    }
+
     // returns whether the user is verified or not
     // __________________________________
     pub async fn update_email_verification(
@@ -473,7 +499,7 @@ impl User {
         creator: Thing,
         club_verification_file: String,
         profile_pic: Option<String>,
-    ) -> Result<serde_json::Value,String>{
+    ) -> Result<serde_json::Value, String> {
         let create_club_query = CreateStatement {
             what: Values(vec![Value::Table(Table("user".to_string()))]),
             data: Some(Data::ContentExpression(Value::Object(Object(bmap!(
@@ -506,7 +532,7 @@ impl User {
             Ok(mut response) => {
                 let club: Option<serde_json::Value> = response.take(0).unwrap();
                 Ok(club.unwrap())
-            },
+            }
             Err(e) => Err(e.to_string()),
         }
     }
