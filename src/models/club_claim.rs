@@ -1,7 +1,6 @@
 use async_trait::async_trait;
 use axum::{extract::FromRequestParts, http::request::Parts};
-use surrealdb::sql::{Thing, Id};
-
+use surrealdb::sql::{Id, Thing};
 
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
 pub struct ClubClaim {

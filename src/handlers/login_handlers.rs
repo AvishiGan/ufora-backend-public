@@ -8,7 +8,10 @@ use axum::{
 use surrealdb::{engine::remote::ws::Client, Surreal};
 use tower_cookies::{Cookie, Cookies};
 
-use crate::{models::user::{User, ClubOfficial}, services::jwt};
+use crate::{
+    models::user::{ClubOfficial, User},
+    services::jwt,
+};
 
 // request struct for login
 #[derive(serde::Deserialize, Debug)]
@@ -150,23 +153,18 @@ pub async fn club_login(
                 }
                 if let Some(club_official_info) = club_official_info {
                     match jwt::get_club_jwt(club_id, club_official_info.get_role()) {
-                        Ok(token) => {
-                            (
-                                StatusCode::OK,
-                                Json(LoginResponse::Success {
-                                    message: "Login Successful".to_string(),
-                                    token,
-                                }),
-                            )
-                        }
-                        Err(_) => {
-                            (
-                                StatusCode::INTERNAL_SERVER_ERROR,
-                                Json(LoginResponse::InternalServerError),
-                            )
-                        }
+                        Ok(token) => (
+                            StatusCode::OK,
+                            Json(LoginResponse::Success {
+                                message: "Login Successful".to_string(),
+                                token,
+                            }),
+                        ),
+                        Err(_) => (
+                            StatusCode::INTERNAL_SERVER_ERROR,
+                            Json(LoginResponse::InternalServerError),
+                        ),
                     }
-                    
                 } else {
                     (
                         StatusCode::UNAUTHORIZED,

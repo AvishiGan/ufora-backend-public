@@ -103,10 +103,7 @@ impl User {
         }
     }
 
-    pub async fn get_user_by_id(
-        db: Arc<Surreal<Client>>,
-        user_id: String,
-    ) -> Result<Self,String> {
+    pub async fn get_user_by_id(db: Arc<Surreal<Client>>, user_id: String) -> Result<Self, String> {
         let response: Result<Option<Self>, surrealdb::Error> = db.select(("user", user_id)).await;
         match response {
             Ok(user) => Ok(user.unwrap()),
@@ -502,7 +499,7 @@ impl User {
         creator: Thing,
         club_verification_file: String,
         profile_pic: Option<String>,
-    ) -> Result<serde_json::Value,String>{
+    ) -> Result<serde_json::Value, String> {
         let create_club_query = CreateStatement {
             what: Values(vec![Value::Table(Table("user".to_string()))]),
             data: Some(Data::ContentExpression(Value::Object(Object(bmap!(
@@ -535,7 +532,7 @@ impl User {
             Ok(mut response) => {
                 let club: Option<serde_json::Value> = response.take(0).unwrap();
                 Ok(club.unwrap())
-            },
+            }
             Err(e) => Err(e.to_string()),
         }
     }
