@@ -5,3 +5,4 @@ pub mod post;
 pub mod blog;
 pub mod project;
 pub mod chat;
+pub mod club_claim;

@@ -230,6 +230,12 @@ pub async fn verify_club_email(
     }
 }
 
-pub async fn club_middleware_check() {
-    println!("Club middleware check")
+pub async fn club_middleware_check(
+    claim: crate::models::user_claim::Claim,
+    club_claim: crate::models::club_claim::ClubClaim,
+) {
+    println!("User middleware check");
+    println!("User id: {:?}", claim);
+    println!("Club middleware check");
+    println!("Club id: {:?}", club_claim);
 }
