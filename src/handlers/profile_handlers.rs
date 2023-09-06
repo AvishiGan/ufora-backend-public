@@ -23,13 +23,17 @@ pub async fn create_profile(
         .await
         .unwrap();
 
-    // println!("{:?}", result.to_string());
+    println!("{:?}", result.to_string());
 
     let response = db.query(result).await;
     // println!("{:?}", response);
 
     match response {
-        Ok(_) => {
+        Ok(test) => {
+
+            println!("{:?}", test);
+
+            
             return (
                 StatusCode::OK,
                 Json(Value::String(

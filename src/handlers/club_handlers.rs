@@ -176,7 +176,7 @@ pub async fn verify_club_email(
                         .single()
                         .unwrap()
                 {
-                    let _response: Result<serde_json::Value, surrealdb::Error> =
+                    let _response: Result<Option<serde_json::Value>, surrealdb::Error> =
                         db.delete(("otp", decrypted_email.clone())).await;
                     (
                         StatusCode::BAD_REQUEST,
@@ -192,7 +192,7 @@ pub async fn verify_club_email(
                         })),
                     )
                 } else {
-                    let _response: Result<serde_json::Value, surrealdb::Error> =
+                    let _response: Result<Option<serde_json::Value>, surrealdb::Error> =
                         db.delete(("otp", decrypted_email.clone())).await;
                     match User::update_email_verification(db, decrypted_email).await {
                         Ok(_) => (

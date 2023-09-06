@@ -83,7 +83,7 @@ impl Project {
             Some(_) => {}
         }
 
-        let response: Result<Option<Self>, surrealdb::Error> =
+        let response: Result<Vec<Self>, surrealdb::Error> =
             db.create("project").content(self).await;
 
         match response {
@@ -96,14 +96,12 @@ impl Project {
 
         let project = response.unwrap();
 
-        match project {
-            None => {
-                println!("Error: {:?}", "No blog returned");
+        if project.len() == 0 {
+            println!("Error: {:?}", "No blog returned");
                 return Err(format!("{:?}", "No blog returned"));
-            }
-            Some(blog) => {
-                Self::relate_user_with_project(db.clone(), blog.id.unwrap(), user.unwrap()).await?;
-            }
+        }
+        else {
+            Self::relate_user_with_project(db.clone(), project.get(0).unwrap().clone().id.unwrap(), user.unwrap()).await?;
         }
 
         Ok(())

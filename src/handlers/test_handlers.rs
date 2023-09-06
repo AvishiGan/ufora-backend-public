@@ -1,9 +1,8 @@
 use std::sync::Arc;
 
 use axum::{
-    body::Body,
     extract::State,
-    http::{Request, StatusCode},
+    http::StatusCode,
     Json,
 };
 use serde::{Deserialize, Serialize};
@@ -40,7 +39,7 @@ pub async fn test_route(
     //     .get::<crate::models::user_claim::Claim>()
     //     .unwrap();
 
-    let created: Result<Record, surrealdb::Error> = db
+    let created: Result<Vec<Record>, surrealdb::Error> = db
         .create("person")
         .content(Person {
             title: "Founder & CEO",

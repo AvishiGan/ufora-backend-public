@@ -19,14 +19,10 @@ use surrealdb::{
     },
     Surreal,
 };
-use surrealdb_extra::query_builder::{
-    filter::{LogicalOperator, RelationalOperator},
-    Query,
-};
 
 use crate::services::{
     password,
-    query_builder::{get_select_query, Column, ExpressionConnector, Item, OrderBy},
+    query_builder::{self, get_select_query, Column, ExpressionConnector, Item, OrderBy},
 };
 
 // model for user
@@ -128,14 +124,15 @@ impl User {
                 "username".to_string() => Value::Strand(Strand(self.username.unwrap())),
                 "name".to_string() => Value::Strand(Strand(self.name.unwrap())),
                 "password".to_string() => Value::Strand(Strand(password::hash_password(self.password.unwrap())?)),
-                "locked_flag".to_string() => Value::False,
+                "locked_flag".to_string() => Value::Bool(false),
                 "user_type".to_string() => Value::Strand(Strand(user_type)),
                 "email".to_string() => Value::Strand(Strand(self.email.unwrap())),
-                "email_verification_flag".to_string() => Value::False,
+                "email_verification_flag".to_string() => Value::Bool(false),
                 "invalid_login_attempts".to_string() => Value::Number(Number::Int(0)),
                 "registration_date".to_string() => Value::Datetime(Datetime::default()),
             ))))),
             output: Some(Output::Null),
+            only: false,
             timeout: None,
             parallel: false,
         })
@@ -155,9 +152,9 @@ impl User {
                         "university_email_verification_flag".to_string(),
                     ))]),
                     Operator::Equal,
-                    Value::True,
+                    Value::Bool(true),
                 )])),
-                cond: Some(Cond(Value::Expression(Box::from(Expression {
+                cond: Some(Cond(Value::Expression(Box::from(Expression::Binary {
                     l: Value::Idiom(Idiom(vec![Part::Field(Ident(
                         "university_email".to_string(),
                     ))])),
@@ -165,6 +162,7 @@ impl User {
                     r: Value::Strand(Strand(email)),
                 })))),
                 output: None,
+                only: false,
                 timeout: None,
                 parallel: false,
             })
@@ -188,7 +186,7 @@ impl User {
             (_, _) => {}
         }
 
-        let response: Result<String, surrealdb::Error> = db
+        let response: Result<Option<serde_json::Value>, surrealdb::Error> = db
             .update(("user", user_id.id))
             .patch(PatchOp::replace("/university", university.unwrap()))
             .patch(PatchOp::replace(
@@ -220,7 +218,7 @@ impl User {
             .query(SelectStatement {
                 expr: Fields(vec![Field::All], true),
                 what: Values(vec![Value::Table(Table("user".to_string()))]),
-                cond: Some(Cond(Value::Expression(Box::from(Expression {
+                cond: Some(Cond(Value::Expression(Box::from(Expression::Binary {
                     l: Value::Idiom(Idiom(vec![Part::Field(Ident("username".to_string()))])),
                     o: surrealdb::sql::Operator::Equal,
                     r: Value::Strand(Strand(username)),
@@ -229,6 +227,10 @@ impl User {
                 order: None,
                 limit: Some(Limit(Value::Number(Number::Int(1)))),
                 start: None,
+                omit: None,
+                only: false,
+                explain: None,
+                with: None,
                 fetch: None,
                 version: None,
                 split: None,
@@ -324,14 +326,15 @@ impl User {
                         "email_verification_flag".to_string(),
                     ))]),
                     Operator::Equal,
-                    Value::True,
+                    Value::Bool(true),
                 )])),
-                cond: Some(Cond(Value::Expression(Box::from(Expression {
+                cond: Some(Cond(Value::Expression(Box::from(Expression::Binary {
                     l: Value::Idiom(Idiom(vec![Part::Field(Ident("email".to_string()))])),
                     o: surrealdb::sql::Operator::Equal,
                     r: Value::Strand(Strand(email)),
                 })))),
                 output: None,
+                only: false,
                 timeout: None,
                 parallel: false,
             })
@@ -350,7 +353,7 @@ impl User {
             .query(SelectStatement {
                 expr: Fields(vec![Field::All], true),
                 what: Values(vec![Value::Table(Table("user".to_string()))]),
-                cond: Some(Cond(Value::Expression(Box::from(Expression {
+                cond: Some(Cond(Value::Expression(Box::from(Expression::Binary {
                     l: Value::Idiom(Idiom(vec![Part::Field(Ident("email".to_string()))])),
                     o: surrealdb::sql::Operator::Equal,
                     r: Value::Strand(Strand(email)),
@@ -359,6 +362,10 @@ impl User {
                 order: None,
                 limit: Some(Limit(Value::Number(Number::Int(1)))),
                 start: None,
+                omit: None,
+                only: false,
+                explain: None,
+                with: None,
                 fetch: None,
                 version: None,
                 split: None,
@@ -408,35 +415,38 @@ impl User {
             (_, _) => {}
         }
 
-        let response = Query::new()
-            .from("user", None)
-            .limit(1)
-            .field("name")
-            .field("username")
-            .field("email")
-            .field("password")
-            .field("user_id")
-            .field("user_type")
-            .field("locked_flag")
-            .field("invalid_login_attempts")
-            .field("id")
-            .where_filter()
-            .filter((
-                "username",
-                RelationalOperator::Equal,
-                username.unwrap_or("".to_string()),
-                LogicalOperator::Or,
-            ))
-            .unwrap_right()
-            .filter((
-                "email",
-                RelationalOperator::Equal,
-                email.unwrap_or("".to_string()),
-                LogicalOperator::End,
-            ))
-            .unwrap_left()
-            .execute(&db)
+        let query = query_builder::get_select_query(
+            Item::Table("user".to_string()),
+            Column::All,
+            Some(vec![
+                (
+                    query_builder::Expression::EqualTo(
+                        "username".to_string(),
+                        format!("\"{}\"", username.unwrap_or("".to_string())),
+                    ),
+                    ExpressionConnector::Or,
+                ),
+                (
+                    query_builder::Expression::EqualTo(
+                        "email".to_string(),
+                        format!("\"{}\"", email.unwrap_or("".to_string())),
+                    ),
+                    ExpressionConnector::End,
+                ),
+            ]),
+            None,
+            None,
+            None,
+            None,
+        );
+
+        println!("{:?}", query);
+
+        let response = db
+            .query(query)
             .await;
+
+        println!("{:?}", response);
 
         match response {
             Err(_) => {
@@ -507,11 +517,11 @@ impl User {
                 "name".to_string() => Value::Strand(Strand(name)),
                 "user_type".to_string() => Value::Strand(Strand("club".to_string())),
                 "email".to_string() => Value::Strand(Strand(email)),
-                "email_verification_flag".to_string() => Value::False,
+                "email_verification_flag".to_string() => Value::Bool(false),
                 "registration_date".to_string() => Value::Datetime(Datetime::default()),
                 "club_type".to_string() => Value::Strand(Strand(club_type)),
                 "club_verification_file".to_string() => Value::Strand(Strand(club_verification_file)),
-                "club_verification_flag".to_string() => Value::False,
+                "club_verification_flag".to_string() => Value::Bool(false),
                 "profile_pic".to_string() => Value::Strand(Strand(profile_pic.unwrap_or("".to_string()))),
                 "officials".to_string() => Value::Array(Array (vec![Value::Object(Object(bmap!(
                     "user_id".to_string() => Value::Thing(creator),
@@ -519,11 +529,13 @@ impl User {
                 )))])),
             ))))),
             output: Some(Output::Fields(Fields(
-                vec![Field::Alone(Value::Idiom(Idiom(vec![Part::Field(Ident(
-                    "email".to_string(),
-                ))])))],
+                vec![Field::Single {
+                    expr: Value::Idiom(Idiom(vec![Part::Field(Ident("email".to_string()))])),
+                    alias: None,
+                }],
                 false,
             ))),
+            only: false,
             timeout: None,
             parallel: false,
         };
@@ -655,14 +667,11 @@ pub async fn update_user_profile_query(
     println!("{:?}", fields);
 
     Ok(UpdateStatement {
-        what: Values(vec![Value::Table(Table("user".to_string()))]),
+        what: Values(vec![Value::Thing(Thing{tb:"user".to_string(), id:surrealdb::sql::Id::String(user_id)})]),
         data: Some(Data::MergeExpression(Value::Object(Object(fields)))), // optional fields passed here
-        cond: Some(Cond(Value::Expression(Box::from(Expression {
-            l: Value::Idiom(Idiom(vec![Part::Field(Ident("id".to_string()))])),
-            o: surrealdb::sql::Operator::Equal,
-            r: Value::Strand(Strand(format!("user:{}", user_id))),
-        })))),
+        cond: None,
         output: None,
+        only: false,
         timeout: None,
         parallel: false,
     })

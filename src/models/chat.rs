@@ -6,20 +6,14 @@ use simple_collection_macros::bmap;
 use surrealdb::{
     engine::remote::ws::Client,
     sql::{
-        statements::{CreateStatement, SelectStatement, UpdateStatement},
+        statements::{CreateStatement, SelectStatement},
         Array, Cond, Data, Datetime, Expression, Field, Fields, Ident, Idiom, Object, Output, Part,
-        Strand, Table, Thing, Value, Values,
+        Table, Thing, Value, Values,
     },
     Surreal,
 };
 
-use crate::services::{
-    password,
-    query_builder::{
-        get_relate_query_with_content, get_select_query, get_update_query_for_merge_or_content,
-        get_update_query_with_set_opertor, Column, Item,
-    },
-};
+use crate::services::query_builder::{get_select_query, Column, Item};
 
 use super::user::User;
 
@@ -125,12 +119,12 @@ impl PersonalChat {
             // with: None,
             // check chatmadeby an chatmadewith
             cond: Some(Cond(Value::Array(Array(vec![
-                Value::Expression(Box::from(Expression {
+                Value::Expression(Box::from(Expression::Binary {
                     l: Value::Idiom(Idiom(vec![Part::Field(Ident("chatmadeby".to_string()))])),
                     o: surrealdb::sql::Operator::Equal,
                     r: Value::Thing(chatmadebyid.clone()),
                 })),
-                Value::Expression(Box::from(Expression {
+                Value::Expression(Box::from(Expression::Binary {
                     l: Value::Idiom(Idiom(vec![Part::Field(Ident("chatmadewith".to_string()))])),
                     o: surrealdb::sql::Operator::Equal,
                     r: Value::Thing(chatmadewithid.clone()),
@@ -147,6 +141,10 @@ impl PersonalChat {
             limit: None,
             start: None,
             fetch: None,
+            omit: None,
+            only: false,
+            explain: None,
+            with: None,
             version: None,
             split: None,
             timeout: None,
@@ -183,7 +181,7 @@ impl PersonalChat {
 
                 "messages".to_string() => Value::Array(Array(vec![])),
             ))))),
-            // only: false,
+            only: false,
             output: Some(Output::Null),
             timeout: None,
             parallel: false,

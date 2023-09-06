@@ -313,7 +313,7 @@ pub async fn reset_password(
             struct TempPass {}
 
             // update password in database
-            let _response: Vec<TempPass> = db
+            let _response: Option<TempPass> = db
                 .update(("user", user_id))
                 .patch(PatchOp::replace("/password", Value::Strand(Strand(hashed_password)))).await
                 .unwrap();

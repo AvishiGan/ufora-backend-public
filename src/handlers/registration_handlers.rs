@@ -6,7 +6,7 @@ use axum::{
     Json,
 };
 
-use surrealdb::{engine::remote::ws::Client, sql::Thing, Surreal};
+use surrealdb::{engine::remote::ws::Client, Surreal};
 
 use crate::models::user::User;
 
@@ -37,8 +37,10 @@ pub async fn register_a_user(
     Path(user_type): Path<String>,
     Json(user_details): Json<UserRegistrationRequest>,
 ) -> (StatusCode, Json<UserRegistrationResponse>) {
+    
     // get user and user models
     let user = user_details.get_user_and_user_models();
+
 
     let available_user = User::get_user_by_email_or_username(
         db.clone(),
@@ -46,6 +48,8 @@ pub async fn register_a_user(
         Some(user.get_user_username()),
     )
     .await;
+
+
 
     match available_user {
         Ok(usr) if user.get_user_email() == usr.get_user_email() => {
