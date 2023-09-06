@@ -53,10 +53,10 @@ pub fn get_router() -> Router<Arc<Surreal<Client>>> {
         .merge(get_logout_router())
         // merge profile router
         .merge(get_profile_router())
+        // merge chat router -> with authorization
+        .merge(get_chat_router())
         // layer to validate jwt -> check whether user has access
         .layer(middleware::from_fn(middlewares::auth::validate_jwt))
-        // merge chat router -> without authorization
-        .merge(get_chat_router())
         // merge login router
         .merge(get_login_router())
         // merge forgot password router

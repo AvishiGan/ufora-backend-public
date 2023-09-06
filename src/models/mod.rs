@@ -4,3 +4,4 @@ pub mod user_claim;
 pub mod post;
 pub mod blog;
 pub mod project;
+pub mod chat;
