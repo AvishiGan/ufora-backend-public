@@ -6,23 +6,31 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-axum = { version = "0.6.18", features = ["headers"] }
+async-trait = "0.1.72"
+axum = { version = "0.6.18", features = ["headers", "ws"] }
 axum-auth = "0.4.0"
+axum-valid = { version = "0.6", features = ["into_json"] }
 bcrypt = "0.15.0"
 cargo-watch = "8.4.0"
 chrono = { version = "0.4.26", features = ["serde"] }
 cors = "0.1.0"
+dateparser = "0.2.0"
 dotenvy = "0.15.7"
 dotenvy_macro = "0.15.7"
+futures = "0.3.28"
 jsonwebtoken = "8.3.0"
 lettre = { version = "0.10.4", features = ["tokio1-native-tls", "sendmail-transport"] }
 magic-crypt = "3.1.12"
 rand = "0.8.5"
+reqwest = "0.11.18"
 serde = { version = "1.0.169", features = ["derive"] }
-serde_json = "1.0.100"
+serde_json = "1.0.104"
 simple-collection-macros = "0.1.2"
-surrealdb = "1.0.0-beta.9"
+surrealdb = "1.0.0-beta.11"
 tokio = { version = "1.29.1", features = ["rt-multi-thread", "macros"] }
 tower-cookies = "0.9.0"
 tower-http = { version = "0.4.1", features = ["cors"] }
+tracing = "0.1.37"
+tracing-subscriber = { version = "0.3.17", features = ["env-filter"] }
 uuid = "1.4.1"
+validator = { version = "0.16.1", features = ["derive"] }
